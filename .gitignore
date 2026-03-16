@@ -6,6 +6,9 @@ dist/
 # dependencies
 node_modules/
 
+#tools-Verzeichnis mit internen Hilfen
+tools/
+
 # logs
 npm-debug.log*
 yarn-debug.log*
