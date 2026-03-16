@@ -1,0 +1,31 @@
+---
+export const prerender = false;
+
+import BaseLayout from "../layouts/BaseLayout.astro";
+import ImportFlow from "../components/import/ImportFlow";
+
+// Drizzle-DB importieren
+import { db } from "../db";
+import {
+  organizers as organizersTable,
+  timeSlots as timeSlotsTable,
+  locations as locationsTable,
+  eventTypes as eventTypesTable,
+} from "../db/schema";
+
+// Daten aus der DB holen
+const organizers = await db.select().from(organizersTable);
+const timeSlots = await db.select().from(timeSlotsTable);
+const locations = await db.select().from(locationsTable);
+const eventTypes = await db.select().from(eventTypesTable);
+---
+
+<BaseLayout title="Event Import">
+  <ImportFlow
+    client:load
+    organizers={organizers}
+    timeSlots={timeSlots}
+    locations={locations}
+    eventTypes={eventTypes}
+  />
+</BaseLayout>
