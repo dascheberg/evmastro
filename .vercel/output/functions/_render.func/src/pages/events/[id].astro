@@ -1,0 +1,236 @@
+---
+export const prerender = false;
+
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { db } from "../../db";
+import {
+  events,
+  locations,
+  organizers,
+  eventTypes,
+  timeSlots,
+} from "../../db/schema";
+import { eq } from "drizzle-orm";
+import { recurrenceToText, recurrenceIcon } from "../../utils/recurrence";
+
+const { id } = Astro.params;
+const eventId = Number(id);
+
+if (!eventId || isNaN(eventId)) {
+  return Astro.redirect("/user");
+}
+
+const [row] = await db
+  .select({
+    id: events.id,
+    startDate: events.startDate,
+    endDate: events.endDate,
+    notes: events.notes,
+    recurrence: events.recurrence,
+    importId: events.importId,
+    locationName: locations.name,
+    typeName: eventTypes.name,
+    organizerName: organizers.name,
+    timeSlotName: timeSlots.name,
+  })
+  .from(events)
+  .leftJoin(locations, eq(events.locationId, locations.id))
+  .leftJoin(eventTypes, eq(events.typeId, eventTypes.id))
+  .leftJoin(organizers, eq(events.organizerId, organizers.id))
+  .leftJoin(timeSlots, eq(events.timeId, timeSlots.id))
+  .where(eq(events.id, eventId));
+
+if (!row) {
+  return Astro.redirect("/user");
+}
+
+// ── Formatierung ──────────────────────────────────────────────────────────────
+
+const startFormatted = new Date(row.startDate).toLocaleDateString("de-DE", {
+  weekday: "long",
+  day: "2-digit",
+  month: "long",
+  year: "numeric",
+});
+
+const endFormatted =
+  row.endDate && row.endDate !== row.startDate
+    ? new Date(row.endDate).toLocaleDateString("de-DE", {
+        weekday: "long",
+        day: "2-digit",
+        month: "long",
+        year: "numeric",
+      })
+    : null;
+
+const recurrence = row.recurrence as any;
+const recurrenceText = recurrenceToText(recurrence);
+const recurrenceIco = recurrenceIcon(recurrence);
+---
+
+<BaseLayout title={row.typeName ?? "Veranstaltung"}>
+  <div class="max-w-2xl mx-auto space-y-6">
+    {/* Zurück-Link */}
+    <a
+      href="/user"
+      class="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700"
+    >
+      ← Zurück zur Übersicht
+    </a>
+
+    {/* Hauptkarte */}
+    <div class="bg-white rounded-xl shadow overflow-hidden">
+      {/* Farbiger Header */}
+      <div class="bg-green-700 px-6 py-5">
+        <h1 class="text-white font-bold text-2xl leading-tight">
+          {row.typeName ?? "Veranstaltung"}
+        </h1>
+        <p class="text-green-200 mt-1">
+          {row.organizerName}
+        </p>
+      </div>
+
+      {/* Detailfelder */}
+      <div class="p-6 space-y-5">
+        {/* Datum */}
+        <div class="flex gap-4">
+          <div class="text-green-700 mt-0.5">📅</div>
+          <div>
+            <div class="text-xs text-gray-400 uppercase tracking-wide mb-0.5">
+              {endFormatted ? "Zeitraum" : "Datum"}
+            </div>
+            <div class="font-medium text-gray-800">
+              {startFormatted}
+              {
+                endFormatted && (
+                  <span class="text-gray-500"> – {endFormatted}</span>
+                )
+              }
+            </div>
+          </div>
+        </div>
+
+        {/* Uhrzeit */}
+        {
+          row.timeSlotName && (
+            <div class="flex gap-4">
+              <div class="text-green-700 mt-0.5">🕐</div>
+              <div>
+                <div class="text-xs text-gray-400 uppercase tracking-wide mb-0.5">
+                  Uhrzeit
+                </div>
+                <div class="font-medium text-gray-800">
+                  {row.timeSlotName} Uhr
+                </div>
+              </div>
+            </div>
+          )
+        }
+
+        {/* Veranstaltungsart */}
+        <div class="flex gap-4">
+          <div class="text-green-700 mt-0.5">🏷️</div>
+          <div>
+            <div class="text-xs text-gray-400 uppercase tracking-wide mb-0.5">
+              Veranstaltungsart
+            </div>
+            <div class="font-medium text-gray-800">
+              {row.typeName ?? "–"}
+            </div>
+          </div>
+        </div>
+
+        {/* Veranstalter */}
+        <div class="flex gap-4">
+          <div class="text-green-700 mt-0.5">👥</div>
+          <div>
+            <div class="text-xs text-gray-400 uppercase tracking-wide mb-0.5">
+              Veranstalter
+            </div>
+            <div class="font-medium text-gray-800">
+              {row.organizerName ?? "–"}
+            </div>
+          </div>
+        </div>
+
+        {/* Ort */}
+        <div class="flex gap-4">
+          <div class="text-green-700 mt-0.5">📍</div>
+          <div>
+            <div class="text-xs text-gray-400 uppercase tracking-wide mb-0.5">
+              Veranstaltungsort
+            </div>
+            <div class="font-medium text-gray-800">
+              {row.locationName ?? "–"}
+            </div>
+          </div>
+        </div>
+
+        {/* Bemerkungen */}
+        {
+          row.notes && (
+            <div class="flex gap-4">
+              <div class="text-green-700 mt-0.5">📝</div>
+              <div>
+                <div class="text-xs text-gray-400 uppercase tracking-wide mb-0.5">
+                  Bemerkungen
+                </div>
+                <div class="text-gray-600 whitespace-pre-line">{row.notes}</div>
+              </div>
+            </div>
+          )
+        }
+
+        {/* Wiederholung */}
+        {
+          recurrenceText && (
+            <div class="flex gap-4">
+              <div class="text-green-700 mt-0.5">🔁</div>
+              <div>
+                <div class="text-xs text-gray-400 uppercase tracking-wide mb-0.5">
+                  Wiederholung
+                </div>
+                <div class="font-medium text-gray-800">
+                  {recurrenceIco} {recurrenceText}
+                </div>
+                {recurrence && (
+                  <details class="mt-2">
+                    <summary class="text-xs text-gray-400 cursor-pointer hover:text-gray-600">
+                      Rohdaten anzeigen
+                    </summary>
+                    <pre class="mt-1 text-xs bg-gray-50 p-2 rounded border overflow-auto">
+                      {JSON.stringify(recurrence, null, 2)}
+                    </pre>
+                  </details>
+                )}
+              </div>
+            </div>
+          )
+        }
+
+        {/* Trennlinie */}
+        <hr class="border-gray-100" />
+
+        {/* Metadaten */}
+        <div class="text-xs text-gray-400 space-y-1">
+          <div>Event-ID: #{row.id}</div>
+          {row.importId && <div>Import-ID: #{row.importId}</div>}
+        </div>
+      </div>
+    </div>
+
+    {/* iCal Download für dieses Event */}
+    <div class="flex gap-3">
+      <a
+        href={`/api/events-ical?search=${encodeURIComponent(row.typeName ?? "")}`}
+        class="btn btn-sm btn-outline"
+        title="Dieses Event in Kalender-App importieren"
+      >
+        📅 In Kalender übernehmen
+      </a>
+      <button onclick="window.print()" class="btn btn-sm btn-outline">
+        🖨️ Drucken
+      </button>
+    </div>
+  </div>
+</BaseLayout>

@@ -1,0 +1,43 @@
+---
+export const prerender = false;
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { LookupTable } from "../../components/lookups/LookupsTable";
+---
+
+<BaseLayout title="Hilfstabellen">
+  <h2 class="text-2xl font-semibold mb-4">Hilfstabellen‑Übersicht</h2>
+  <div class="pl-24 py-4 pr-4 grid grid-cols-4 gap-4">
+    <div>
+      <div class="text-2xl font-bold underline">Veranstalter</div>
+      <LookupTable
+        api="/api/lookups/organizers"
+        title="Veranstalter"
+        client:only="react"
+      />
+    </div>
+    <div>
+      <div class="text-2xl font-bold underline">Veranstaltungsorte</div>
+      <LookupTable
+        api="/api/lookups/locations"
+        title="Veranstaltungsorte"
+        client:only="react"
+      />
+    </div>
+    <div>
+      <div class="text-2xl font-bold underline">Veranstaltungsarten</div>
+      <LookupTable
+        api="/api/lookups/eventTypes"
+        title="Veranstaltungsarten"
+        client:only="react"
+      />
+    </div>
+    <div>
+      <div class="text-2xl font-bold underline">Uhrzeiten</div>
+      <LookupTable
+        api="/api/lookups/timeSlots"
+        title="Uhrzeiten"
+        client:only="react"
+      />
+    </div>
+  </div>
+</BaseLayout>

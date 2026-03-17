@@ -1,0 +1,401 @@
+---
+export const prerender = false;
+
+import { db } from "../db";
+import {
+  events,
+  locations,
+  organizers,
+  eventTypes,
+  timeSlots,
+} from "../db/schema";
+import { eq, and, gte, lte, or, ilike, asc } from "drizzle-orm";
+
+// ── Filter aus URL-Parametern ─────────────────────────────────────────────────
+
+const url = Astro.url;
+const organizerId = Number(url.searchParams.get("organizerId"));
+const locationId = Number(url.searchParams.get("locationId"));
+const typeId = Number(url.searchParams.get("typeId"));
+const month = Number(url.searchParams.get("month"));
+const year = Number(url.searchParams.get("year"));
+const search = url.searchParams.get("search")?.trim() ?? "";
+
+const conditions: any[] = [];
+
+if (organizerId) conditions.push(eq(events.organizerId, organizerId));
+if (locationId) conditions.push(eq(events.locationId, locationId));
+if (typeId) conditions.push(eq(events.typeId, typeId));
+
+if (month && year) {
+  const startStr = `${year}-${String(month).padStart(2, "0")}-01`;
+  const endDate = new Date(year, month, 0);
+  const endStr = endDate.toISOString().split("T")[0];
+  conditions.push(gte(events.startDate, startStr));
+  conditions.push(lte(events.startDate, endStr));
+}
+
+if (search) {
+  conditions.push(
+    or(
+      ilike(organizers.name, `%${search}%`),
+      ilike(locations.name, `%${search}%`),
+      ilike(eventTypes.name, `%${search}%`),
+      ilike(events.notes, `%${search}%`),
+    ),
+  );
+}
+
+const rows = await db
+  .select({
+    id: events.id,
+    startDate: events.startDate,
+    endDate: events.endDate,
+    notes: events.notes,
+    locationName: locations.name,
+    typeName: eventTypes.name,
+    organizerName: organizers.name,
+    timeSlotName: timeSlots.name,
+  })
+  .from(events)
+  .leftJoin(locations, eq(events.locationId, locations.id))
+  .leftJoin(eventTypes, eq(events.typeId, eventTypes.id))
+  .leftJoin(organizers, eq(events.organizerId, organizers.id))
+  .leftJoin(timeSlots, eq(events.timeId, timeSlots.id))
+  .where(conditions.length > 0 ? and(...conditions) : undefined)
+  .orderBy(asc(events.startDate));
+
+// ── Nach Monat gruppieren ─────────────────────────────────────────────────────
+
+type EventRow = (typeof rows)[0];
+type MonthGroup = { label: string; events: EventRow[] };
+
+const grouped = new Map<string, MonthGroup>();
+
+for (const row of rows) {
+  const d = new Date(row.startDate);
+  const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  const label = d.toLocaleDateString("de-DE", {
+    month: "long",
+    year: "numeric",
+  });
+
+  if (!grouped.has(key)) grouped.set(key, { label, events: [] });
+  grouped.get(key)!.events.push(row);
+}
+
+const months = Array.from(grouped.entries()).sort(([a], [b]) =>
+  a.localeCompare(b),
+);
+
+// ── Hilfsfunktionen ───────────────────────────────────────────────────────────
+
+function formatDate(dateStr: string): string {
+  return new Date(dateStr).toLocaleDateString("de-DE", {
+    weekday: "short",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+}
+
+function formatDateShort(dateStr: string): string {
+  return new Date(dateStr).toLocaleDateString("de-DE", {
+    day: "2-digit",
+    month: "2-digit",
+  });
+}
+
+const printDate = new Date().toLocaleDateString("de-DE", {
+  day: "2-digit",
+  month: "2-digit",
+  year: "numeric",
+});
+---
+
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Veranstaltungskalender – Druckansicht</title>
+
+    <style>
+      /* ── Basis ─────────────────────────────────────────────────── */
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: 11pt;
+        color: #1a1a1a;
+        background: #fff;
+        padding: 1.5cm 2cm;
+      }
+
+      /* ── Kopfzeile ─────────────────────────────────────────────── */
+      .header {
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid #2d6a2d;
+      }
+
+      .header img {
+        width: 80px;
+        height: auto;
+        flex-shrink: 0;
+      }
+
+      .header-text h1 {
+        font-size: 20pt;
+        font-weight: bold;
+        color: #1a3d1a;
+        line-height: 1.2;
+      }
+
+      .header-text p {
+        font-size: 10pt;
+        color: #555;
+        margin-top: 0.25rem;
+      }
+
+      /* ── Druckdatum (nur auf Bildschirm) ───────────────────────── */
+      .print-meta {
+        font-size: 9pt;
+        color: #888;
+        text-align: right;
+        margin-bottom: 1rem;
+      }
+
+      /* ── Monatsblock ───────────────────────────────────────────── */
+      .month-block {
+        margin-bottom: 1.5rem;
+        break-inside: avoid-page;
+      }
+
+      .month-title {
+        font-size: 13pt;
+        font-weight: bold;
+        color: #fff;
+        background-color: #2d6a2d;
+        padding: 0.3rem 0.6rem;
+        margin-bottom: 0.4rem;
+      }
+
+      /* ── Tabelle ───────────────────────────────────────────────── */
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 10pt;
+      }
+
+      thead th {
+        background-color: #e8f5e8;
+        color: #1a3d1a;
+        font-weight: bold;
+        text-align: left;
+        padding: 0.3rem 0.5rem;
+        border-bottom: 1px solid #2d6a2d;
+      }
+
+      tbody tr:nth-child(even) {
+        background-color: #f9fdf9;
+      }
+
+      tbody tr:hover {
+        background-color: #f0f9f0;
+      }
+
+      tbody td {
+        padding: 0.3rem 0.5rem;
+        border-bottom: 1px solid #ddd;
+        vertical-align: top;
+      }
+
+      .td-date {
+        width: 12%;
+        white-space: nowrap;
+      }
+      .td-time {
+        width: 8%;
+        white-space: nowrap;
+      }
+      .td-type {
+        width: 28%;
+      }
+      .td-organizer {
+        width: 22%;
+      }
+      .td-location {
+        width: 22%;
+      }
+      .td-notes {
+        width: 8%;
+        font-size: 9pt;
+        color: #666;
+      }
+
+      /* Enddatum nur anzeigen wenn verschieden vom Startdatum */
+      .date-range {
+        font-size: 8.5pt;
+        color: #666;
+      }
+
+      /* ── Footer ────────────────────────────────────────────────── */
+      .footer {
+        margin-top: 2rem;
+        padding-top: 0.5rem;
+        border-top: 1px solid #ccc;
+        font-size: 8.5pt;
+        color: #888;
+        display: flex;
+        justify-content: space-between;
+      }
+
+      /* ── Druck-Button (nur auf Bildschirm) ─────────────────────── */
+      .screen-only {
+        display: flex;
+        gap: 0.75rem;
+        margin-bottom: 1.5rem;
+      }
+
+      .btn-print {
+        padding: 0.5rem 1.5rem;
+        background-color: #2d6a2d;
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        font-size: 11pt;
+        cursor: pointer;
+      }
+
+      .btn-print:hover {
+        background-color: #1a4d1a;
+      }
+
+      .btn-close {
+        padding: 0.5rem 1.5rem;
+        background-color: #e5e7eb;
+        color: #333;
+        border: none;
+        border-radius: 6px;
+        font-size: 11pt;
+        cursor: pointer;
+      }
+
+      /* ── Print Media Query ─────────────────────────────────────── */
+      @media print {
+        .screen-only {
+          display: none !important;
+        }
+        .print-meta {
+          display: none !important;
+        }
+
+        body {
+          padding: 1cm 1.5cm;
+          font-size: 10pt;
+        }
+
+        .month-block {
+          break-inside: avoid;
+        }
+
+        /* Neue Seite vor jedem Monat (optional – auskommentieren wenn unerwünscht) */
+        /* .month-block { break-before: page; } */
+
+        .footer {
+          position: fixed;
+          bottom: 0.5cm;
+          left: 1.5cm;
+          right: 1.5cm;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <!-- Druck/Schließen Buttons – nur auf Bildschirm -->
+    <div class="screen-only">
+      <button class="btn-print" onclick="window.print()">🖨️ Drucken</button>
+      <button class="btn-close" onclick="window.close()">✕ Schließen</button>
+    </div>
+
+    <!-- Kopfzeile mit Wappen -->
+    <div class="header">
+      <img src="/img/Schmalfeld_Wappen.png" alt="Wappen Schmalfeld" />
+      <div class="header-text">
+        <h1>Veranstaltungskalender Schmalfeld</h1>
+        <p>
+          {
+            months.length > 0
+              ? `${months[0][1].label} – ${months[months.length - 1][1].label}`
+              : "Alle Veranstaltungen"
+          }
+          &nbsp;·&nbsp; {rows.length} Veranstaltungen
+        </p>
+      </div>
+    </div>
+
+    <!-- Druckdatum -->
+    <p class="print-meta">Stand: {printDate}</p>
+
+    <!-- Monatsblöcke -->
+    {
+      months.length === 0 ? (
+        <p style="color: #888; text-align: center; padding: 2rem;">
+          Keine Veranstaltungen gefunden.
+        </p>
+      ) : (
+        months.map(([key, group]) => (
+          <div class="month-block">
+            <div class="month-title">{group.label}</div>
+            <table>
+              <thead>
+                <tr>
+                  <th class="td-date">Datum</th>
+                  <th class="td-time">Uhrzeit</th>
+                  <th class="td-type">Veranstaltung</th>
+                  <th class="td-organizer">Veranstalter</th>
+                  <th class="td-location">Ort</th>
+                  <th class="td-notes">Bemerkung</th>
+                </tr>
+              </thead>
+              <tbody>
+                {group.events.map((ev) => (
+                  <tr>
+                    <td class="td-date">
+                      {formatDate(ev.startDate)}
+                      {ev.endDate && ev.endDate !== ev.startDate && (
+                        <div class="date-range">
+                          bis {formatDateShort(ev.endDate)}
+                        </div>
+                      )}
+                    </td>
+                    <td class="td-time">{ev.timeSlotName ?? "–"}</td>
+                    <td class="td-type">{ev.typeName ?? "–"}</td>
+                    <td class="td-organizer">{ev.organizerName ?? "–"}</td>
+                    <td class="td-location">{ev.locationName ?? "–"}</td>
+                    <td class="td-notes">{ev.notes ?? ""}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ))
+      )
+    }
+
+    <!-- Footer -->
+    <div class="footer">
+      <span>Veranstaltungskalender Schmalfeld</span>
+      <span>Gedruckt am {printDate}</span>
+    </div>
+  </body>
+</html>
