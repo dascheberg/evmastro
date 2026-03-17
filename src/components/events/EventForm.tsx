@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import { LookupCombobox } from "../utils/lookup/LookupCombobox";
 import { LookupLabel } from "../utils/lookup/LookupLabel";
 
-// ⬆️ HIER kommt die Typdefinition hin
 type EventFormState = {
     startDate: string;
     endDate: string;
@@ -12,32 +11,39 @@ type EventFormState = {
     timeSlotsId: number | null;
     notes: string;
 };
+
 type EventFormProps = {
     event: any | null;
     onSaved: () => void;
     onCancel: () => void;
 };
 
+const EMPTY_FORM: EventFormState = {
+    startDate: "",
+    endDate: "",
+    organizerId: null,
+    eventTypeId: null,
+    locationId: null,
+    timeSlotsId: null,
+    notes: "",
+};
+
 export function EventForm({ event, onSaved, onCancel }: EventFormProps) {
 
-    const [form, setForm] = useState<EventFormState>({
-        startDate: "",
-        endDate: "",
-        organizerId: null,
-        eventTypeId: null,
-        locationId: null,
-        timeSlotsId: null,
-        notes: "",
-    });
+    const [form, setForm] = useState<EventFormState>(EMPTY_FORM);
+    const [isEndDateSynced, setIsEndDateSynced] = useState(true);
 
     const [isAddingOrganizer, setIsAddingOrganizer] = useState(false);
     const [isAddingLocation, setIsAddingLocation] = useState(false);
     const [isAddingType, setIsAddingType] = useState(false);
     const [isAddingTimeSlot, setIsAddingTimeSlot] = useState(false);
-    const [isEndDateSynced, setIsEndDateSynced] = useState(true);
 
+    // NEU: Status für Erfolgsmeldung und Fehler
+    const [successMessage, setSuccessMessage] = useState("");
+    const [errorMessage, setErrorMessage] = useState("");
+    const [isSaving, setIsSaving] = useState(false);
 
-    // Formular füllen, wenn ein Event bearbeitet wird
+    // Formular füllen wenn ein Event bearbeitet wird
     useEffect(() => {
         if (event) {
             setForm({
@@ -50,55 +56,86 @@ export function EventForm({ event, onSaved, onCancel }: EventFormProps) {
                 notes: event.notes ?? "",
             });
         } else {
-            // Neu-Modus → leeres Formular
-            setForm({
-                startDate: "",
-                endDate: "",
-                organizerId: null,
-                eventTypeId: null,
-                locationId: null,
-                timeSlotsId: null,
-                notes: "",
-            });
+            setForm(EMPTY_FORM);
         }
+        // Meldungen zurücksetzen wenn ein anderes Event geladen wird
+        setSuccessMessage("");
+        setErrorMessage("");
     }, [event]);
 
-    function update(field, value) {
+    function update(field: string, value: any) {
         setForm((f) => ({ ...f, [field]: value }));
-    }
-
-    async function save() {
-        const method = event ? "PUT" : "POST";
-        const url = event ? `/api/events/${event.id}` : `/api/events`;
-
-        await fetch(url, {
-            method,
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(form),
-        });
-
-        onSaved();
     }
 
     function updateStartDate(value: string) {
         setForm(f => {
             const updated = { ...f, startDate: value };
-
-            if (isEndDateSynced) {
-                updated.endDate = value;
-            }
-
+            if (isEndDateSynced) updated.endDate = value;
             return updated;
         });
     }
 
     function updateEndDate(value: string) {
         setForm(f => ({ ...f, endDate: value }));
+        setIsEndDateSynced(value === form.startDate);
+    }
 
-        if (value === form.startDate) {
-            setIsEndDateSynced(true);
-        } else {
-            setIsEndDateSynced(false);
+    async function save() {
+        // Pflichtfeld-Validierung
+        if (!form.startDate) {
+            setErrorMessage("Bitte ein Beginndatum eingeben.");
+            return;
+        }
+        if (!form.organizerId) {
+            setErrorMessage("Bitte einen Veranstalter auswählen.");
+            return;
+        }
+        if (!form.locationId) {
+            setErrorMessage("Bitte einen Veranstaltungsort auswählen.");
+            return;
+        }
+        if (!form.eventTypeId) {
+            setErrorMessage("Bitte eine Veranstaltungsart auswählen.");
+            return;
+        }
+
+        setIsSaving(true);
+        setErrorMessage("");
+        setSuccessMessage("");
+
+        try {
+            const method = event ? "PUT" : "POST";
+            const url = event ? `/api/events/${event.id}` : `/api/events`;
+
+            const res = await fetch(url, {
+                method,
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(form),
+            });
+
+            if (!res.ok) {
+                throw new Error("Fehler beim Speichern");
+            }
+
+            // Erfolgsmeldung anzeigen
+            setSuccessMessage(event ? "Veranstaltung gespeichert!" : "Veranstaltung hinzugefügt!");
+
+            // Bei Neu-Eingabe: Formular zurücksetzen
+            if (!event) {
+                setForm(EMPTY_FORM);
+                setIsEndDateSynced(true);
+            }
+
+            // Eltern-Komponente informieren (Tabelle neu laden)
+            onSaved();
+
+            // Erfolgsmeldung nach 3 Sekunden ausblenden
+            setTimeout(() => setSuccessMessage(""), 3000);
+
+        } catch (err) {
+            setErrorMessage("Fehler beim Speichern. Bitte erneut versuchen.");
+        } finally {
+            setIsSaving(false);
         }
     }
 
@@ -108,15 +145,29 @@ export function EventForm({ event, onSaved, onCancel }: EventFormProps) {
                 {event ? "Veranstaltung bearbeiten" : "Neue Veranstaltung eingeben"}
             </h2>
 
-            {/* Hier kommen gleich die Felder rein */}
+            {/* Erfolgsmeldung */}
+            {successMessage && (
+                <div className="alert alert-success text-sm py-2">
+                    ✅ {successMessage}
+                </div>
+            )}
+
+            {/* Fehlermeldung */}
+            {errorMessage && (
+                <div className="alert alert-error text-sm py-2">
+                    ❌ {errorMessage}
+                </div>
+            )}
+
             <div className="space-y-4">
 
-                {/* Datum */}
+                {/* Datum + Uhrzeit */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-
                         <label className="label">
-                            <span className="px-2 py-1 text-black rounded text-sm font-bold">Beginndatum</span>
+                            <span className="px-2 py-1 text-black rounded text-sm font-bold">
+                                Beginndatum
+                            </span>
                         </label>
                         <input
                             type="date"
@@ -128,7 +179,9 @@ export function EventForm({ event, onSaved, onCancel }: EventFormProps) {
 
                     <div>
                         <label className="label">
-                            <span className="px-2 py-1 text-black rounded text-sm font-bold">Enddatum</span>
+                            <span className="px-2 py-1 text-black rounded text-sm font-bold">
+                                Enddatum
+                            </span>
                         </label>
                         <input
                             type="date"
@@ -137,10 +190,9 @@ export function EventForm({ event, onSaved, onCancel }: EventFormProps) {
                             onChange={(e) => updateEndDate(e.target.value)}
                         />
                     </div>
-                    {/* Uhrzeit */}
+
                     <div>
                         <LookupLabel label="Beginn-Uhrzeit" isAdding={isAddingTimeSlot} />
-
                         <LookupCombobox
                             api="/api/lookups/timeSlots"
                             value={form.timeSlotsId}
@@ -150,17 +202,14 @@ export function EventForm({ event, onSaved, onCancel }: EventFormProps) {
                     </div>
                 </div>
 
-
                 {/* Veranstalter */}
                 <LookupLabel label="Veranstalter" isAdding={isAddingOrganizer} />
-
                 <LookupCombobox
                     api="/api/lookups/organizers"
                     value={form.organizerId}
                     onChange={(id) => update("organizerId", id)}
                     onAddModeChange={setIsAddingOrganizer}
                 />
-
 
                 {/* Veranstaltungsart */}
                 <LookupLabel label="Veranstaltungsart" isAdding={isAddingType} />
@@ -183,7 +232,9 @@ export function EventForm({ event, onSaved, onCancel }: EventFormProps) {
                 {/* Bemerkungen */}
                 <div>
                     <label className="label">
-                        <span className="px-2 py-1 rounded text-sm font-bold text-black">Bemerkungen</span>
+                        <span className="px-2 py-1 rounded text-sm font-bold text-black">
+                            Bemerkungen
+                        </span>
                     </label>
                     <textarea
                         className="textarea textarea-bordered w-full"
@@ -194,16 +245,24 @@ export function EventForm({ event, onSaved, onCancel }: EventFormProps) {
                 </div>
 
             </div>
+
             <div className="flex gap-2 justify-center pt-4">
-                <button className="btn bg-green-800 text-white font-bold text-base rounded-lg w-48 h-12" onClick={save}>
-                    {event ? "Speichern" : "Hinzufügen"}
+                <button
+                    className="btn bg-green-800 text-white font-bold text-base rounded-lg w-48 h-12"
+                    onClick={save}
+                    disabled={isSaving}
+                >
+                    {isSaving ? "Speichere..." : event ? "Speichern" : "Hinzufügen"}
                 </button>
 
-                <button className="btn bg-red-800 text-white font-bold text-base rounded-lg w-48 h-12" onClick={onCancel}>
+                <button
+                    className="btn bg-red-800 text-white font-bold text-base rounded-lg w-48 h-12"
+                    onClick={onCancel}
+                    disabled={isSaving}
+                >
                     Abbrechen
                 </button>
             </div>
-
         </div>
     );
 }

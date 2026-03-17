@@ -1,8 +1,16 @@
 ---
 import "../styles/global.css";
+import { auth } from "../lib/auth";
 
 const { title = "Event Manager by abg" } = Astro.props;
 const current = Astro.url.pathname;
+
+const session = await auth.api.getSession({
+  headers: Astro.request.headers,
+});
+
+const isLoggedIn = !!session;
+const isAdmin = current.startsWith("/admin");
 ---
 
 <html lang="de" data-theme="light">
@@ -13,10 +21,8 @@ const current = Astro.url.pathname;
   </head>
 
   <body class="min-h-screen flex flex-col bg-base-200">
-    <!-- NAVBAR -->
     <nav class="navbar bg-base-100 shadow">
       <div class="navbar-start">
-        <!-- Hamburger Menü -->
         <div class="dropdown">
           <label tabindex="0" class="btn btn-ghost lg:hidden">
             <svg
@@ -33,116 +39,175 @@ const current = Astro.url.pathname;
                 d="M4 6h16M4 12h16M4 18h16"></path>
             </svg>
           </label>
-
           <ul
             tabindex="0"
             class="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52"
           >
+            <li class="menu-title"><span>Bereich</span></li>
             <li>
               <a href="/" class={current === "/" ? "font-bold" : ""}
                 >Dashboard</a
               >
             </li>
-
             <li>
               <a
                 href="/user"
                 class={current.startsWith("/user") ? "font-bold" : ""}
+                >Veranstaltungen</a
               >
-                Events
-              </a>
             </li>
-
-            <li>
-              <a
-                href="/lookups"
-                class={current.startsWith("/lookups") ? "font-bold" : ""}
-              >
-                Lookup-Tabellen
-              </a>
-            </li>
-
-            <li>
-              <a
-                href="/import"
-                class={current.startsWith("/import") ? "font-bold" : ""}
-              >
-                Daten-Import
-              </a>
-            </li>
-
-            <!-- Admin -->
-            <li>
-              <a
-                href="/admin/events"
-                class={`text-red-600 ${current.startsWith("/admin") ? "font-bold" : ""}`}
-              >
-                Admin
-              </a>
-            </li>
+            {
+              isLoggedIn && (
+                <>
+                  <li class="menu-title mt-2">
+                    <span class="text-red-600">Admin</span>
+                  </li>
+                  <li>
+                    <a
+                      href="/admin/events"
+                      class={`text-red-600 ${current === "/admin/events" ? "font-bold" : ""}`}
+                    >
+                      Veranstaltungen verwalten
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      href="/admin/lookups"
+                      class={`text-red-600 ${current === "/admin/lookups" ? "font-bold" : ""}`}
+                    >
+                      Lookup-Tabellen
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      href="/admin/import"
+                      class={`text-red-600 ${current === "/admin/import" ? "font-bold" : ""}`}
+                    >
+                      Daten-Import
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      href="/admin/imports"
+                      class={`text-red-600 ${current === "/admin/imports" ? "font-bold" : ""}`}
+                    >
+                      Import-Übersicht
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      href="/admin/users"
+                      class={`text-red-600 ${current === "/admin/users" ? "font-bold" : ""}`}
+                    >
+                      Admin-Verwaltung
+                    </a>
+                  </li>
+                </>
+              )
+            }
           </ul>
         </div>
-
-        <!-- Logo / Titel -->
-        <a class="btn btn-ghost normal-case text-xl">Event Manager by abg</a>
+        <a href="/" class="btn btn-ghost normal-case text-xl"
+          >Event Manager by abg</a
+        >
       </div>
 
       <div class="navbar-center hidden lg:flex">
-        <ul class="menu menu-horizontal px-1">
+        <ul class="menu menu-horizontal px-1 gap-1">
           <li>
             <a href="/" class={current === "/" ? "font-bold" : ""}>Dashboard</a>
           </li>
-
           <li>
             <a
               href="/user"
               class={current.startsWith("/user") ? "font-bold" : ""}
+              >Veranstaltungen</a
             >
-              Events
-            </a>
           </li>
-
-          <li>
-            <a
-              href="/lookups"
-              class={current.startsWith("/lookups") ? "font-bold" : ""}
-            >
-              Lookup-Tabellen
-            </a>
-          </li>
-
-          <li>
-            <a
-              href="/import"
-              class={current.startsWith("/import") ? "font-bold" : ""}
-            >
-              Daten-Import
-            </a>
-          </li>
-
-          <!-- Admin -->
-          <li>
-            <a
-              href="/admin/events"
-              class={`text-red-600 ${current.startsWith("/admin") ? "font-bold" : ""}`}
-            >
-              Admin
-            </a>
-          </li>
+          {
+            isLoggedIn && (
+              <li>
+                <details>
+                  <summary
+                    class={`text-red-600 font-semibold ${isAdmin ? "font-bold" : ""}`}
+                  >
+                    Admin
+                  </summary>
+                  <ul class="bg-base-100 rounded-box shadow z-[1] w-56 p-2">
+                    <li>
+                      <a
+                        href="/admin/events"
+                        class={`text-red-600 ${current === "/admin/events" ? "font-bold" : ""}`}
+                      >
+                        Veranstaltungen verwalten
+                      </a>
+                    </li>
+                    <li>
+                      <a
+                        href="/admin/lookups"
+                        class={`text-red-600 ${current === "/admin/lookups" ? "font-bold" : ""}`}
+                      >
+                        Lookup-Tabellen
+                      </a>
+                    </li>
+                    <li>
+                      <a
+                        href="/admin/import"
+                        class={`text-red-600 ${current === "/admin/import" ? "font-bold" : ""}`}
+                      >
+                        Daten-Import
+                      </a>
+                    </li>
+                    <li>
+                      <a
+                        href="/admin/imports"
+                        class={`text-red-600 ${current === "/admin/imports" ? "font-bold" : ""}`}
+                      >
+                        Import-Übersicht
+                      </a>
+                    </li>
+                    <li>
+                      <a
+                        href="/admin/users"
+                        class={`text-red-600 ${current === "/admin/users" ? "font-bold" : ""}`}
+                      >
+                        Admin-Verwaltung
+                      </a>
+                    </li>
+                  </ul>
+                </details>
+              </li>
+            )
+          }
         </ul>
       </div>
 
-      <div class="navbar-end">
-        <!-- Platz für User-Menu / Login, Theme-Switcher etc. -->
+      <div class="navbar-end gap-2">
+        {
+          isLoggedIn ? (
+            <>
+              <span class="text-sm text-gray-500 hidden md:block">
+                {session.user.name || session.user.email}
+              </span>
+              <form method="POST" action="/api/auth/logout">
+                <button type="submit" class="btn btn-sm btn-ghost text-red-600">
+                  Logout
+                </button>
+              </form>
+            </>
+          ) : (
+            <a href="/login" class="btn btn-sm btn-outline">
+              Admin-Login
+            </a>
+          )
+        }
       </div>
     </nav>
 
-    <!-- HAUPTINHALT -->
     <main class="flex-1 p-4">
       <slot />
     </main>
 
-    <!-- FOOTER -->
     <footer class="footer footer-center p-4 bg-base-100 text-base-content">
       <aside>
         <p>© {new Date().getFullYear()} – Datenschutzerklärung – Impressum</p>

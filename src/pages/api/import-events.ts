@@ -1,6 +1,7 @@
 import type { APIRoute } from "astro";
 import { db } from "../../db"
 import { events, importLog } from "../../db/schema";
+import { eq } from "drizzle-orm";
 
 export const prerender = false;
 
@@ -16,7 +17,13 @@ export const POST: APIRoute = async ({ request }) => {
             );
         }
 
-        // Events speichern
+        // Import-Log ZUERST anlegen
+        const [log] = await db.insert(importLog).values({
+            count: incomingEvents.length,
+            events: [],  // vorläufig leer
+        }).returning();
+
+        // Events MIT importId speichern
         const inserted = await db
             .insert(events)
             .values(
@@ -29,15 +36,18 @@ export const POST: APIRoute = async ({ request }) => {
                     notes: ev.notes ?? null,
                     recurrence: ev.recurrence ?? null,
                     organizerId: ev.organizerId,
+                    importId: log.id,   // ← jetzt gesetzt
                 }))
             )
             .returning();
 
-        // Import-Log speichern
-        await db.insert(importLog).values({
-            count: inserted.length,
-            events: inserted.map((e) => e.id), // JSONB array
-        });
+        // Import-Log mit echten IDs aktualisieren
+        await db.update(importLog)
+            .set({
+                count: inserted.length,
+                events: inserted.map((e) => e.id),
+            })
+            .where(eq(importLog.id, log.id));
 
         return new Response(
             JSON.stringify({

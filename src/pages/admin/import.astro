@@ -1,17 +1,17 @@
 ---
 export const prerender = false;
 
-import BaseLayout from "../layouts/BaseLayout.astro";
-import ImportFlow from "../components/import/ImportFlow";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import ImportFlow from "../../components/import/ImportFlow";
 
 // Drizzle-DB importieren
-import { db } from "../db";
+import { db } from "../../db";
 import {
   organizers as organizersTable,
   timeSlots as timeSlotsTable,
   locations as locationsTable,
   eventTypes as eventTypesTable,
-} from "../db/schema";
+} from "../../db/schema";
 
 // Daten aus der DB holen
 const organizers = await db.select().from(organizersTable);

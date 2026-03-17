@@ -27,7 +27,10 @@ export default function MappingMask({ rows, onComplete, onBack }: MappingMaskPro
   const columns = rows[0] ?? [];
   const previewRows = rows.slice(0, 3);
 
-  const allMapped = Object.values(mapping).every((v) => v !== null);
+  // – nur prüfen ob alle REQUIRED_FIELDS gemappt sind
+  const allMapped = REQUIRED_FIELDS.every((field) =>
+    Object.values(mapping).includes(field)
+  );
 
   const isFieldTaken = (field: string) =>
     Object.values(mapping).includes(field);

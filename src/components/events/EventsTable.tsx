@@ -4,26 +4,23 @@ import {
   getCoreRowModel,
   getSortedRowModel,
   getFilteredRowModel,
-  getPaginationRowModel,
   flexRender,
   type ColumnDef,
   type SortingState,
   type ColumnFiltersState,
   type PaginationState,
 } from "@tanstack/react-table";
-import { PencilIcon, TrashIcon, CheckIcon, XMarkIcon } from "@heroicons/react/24/solid";
-
+import { PencilIcon, TrashIcon } from "@heroicons/react/24/solid";
+import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 
 type EventRow = {
   id: number;
   startDate: string;
   endDate: string | null;
-
-  organizer: string | null;   // ← FEHLTE!
+  organizer: string | null;
   location: string | null;
   type: string | null;
   timeSlot: string | null;
-
   recurrence: string | null;
   importId: string | null;
 };
@@ -47,9 +44,6 @@ type EventsResponse = {
   pageSize: number;
   total: number;
   pageCount: number;
-  sortBy: string;
-  sortDir: "asc" | "desc";
-  filters: Record<string, string | null>;
 };
 
 function buildQuery(params: {
@@ -57,32 +51,27 @@ function buildQuery(params: {
   sorting: SortingState;
   columnFilters: ColumnFiltersState;
   dateFilters: { startDateFrom: string; startDateTo: string };
+  search: string;
 }) {
-  const search = new URLSearchParams();
+  const q = new URLSearchParams();
 
-  search.set("page", String(params.pagination.pageIndex + 1));
-  search.set("pageSize", String(params.pagination.pageSize));
+  q.set("page", String(params.pagination.pageIndex + 1));
+  q.set("pageSize", String(params.pagination.pageSize));
 
   if (params.sorting.length > 0) {
-    const s = params.sorting[0];
-    search.set("sortBy", s.id);
-    search.set("sortDir", s.desc ? "desc" : "asc");
+    q.set("sortBy", params.sorting[0].id);
+    q.set("sortDir", params.sorting[0].desc ? "desc" : "asc");
   }
 
   params.columnFilters.forEach((f) => {
-    if (f.value) {
-      search.set(f.id, String(f.value));
-    }
+    if (f.value) q.set(f.id, String(f.value));
   });
 
-  if (params.dateFilters.startDateFrom) {
-    search.set("startDateFrom", params.dateFilters.startDateFrom);
-  }
-  if (params.dateFilters.startDateTo) {
-    search.set("startDateTo", params.dateFilters.startDateTo);
-  }
+  if (params.dateFilters.startDateFrom) q.set("startDateFrom", params.dateFilters.startDateFrom);
+  if (params.dateFilters.startDateTo) q.set("startDateTo", params.dateFilters.startDateTo);
+  if (params.search) q.set("search", params.search);
 
-  return search.toString();
+  return q.toString();
 }
 
 export function EventsTable({ reload, onEdit, onDelete }: EventsTableProps) {
@@ -90,51 +79,67 @@ export function EventsTable({ reload, onEdit, onDelete }: EventsTableProps) {
   const [total, setTotal] = useState(0);
   const [pageCount, setPageCount] = useState(0);
   const [lookups, setLookups] = useState<Lookups>({
-    organizers: [],
-    locations: [],
-    types: [],
-    timeSlots: [],
+    organizers: [], locations: [], types: [], timeSlots: [],
   });
 
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
     pageSize: 10,
   });
-
   const [sorting, setSorting] = useState<SortingState>([
     { id: "startDate", desc: false },
   ]);
-
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
-
   const [dateFilters, setDateFilters] = useState({
     startDateFrom: "",
     startDateTo: "",
   });
 
+  // Freitextsuche mit Debounce
+  const [searchInput, setSearchInput] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchInput);
+      // Bei neuer Suche auf Seite 1 zurückspringen
+      setPagination((p) => ({ ...p, pageIndex: 0 }));
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
   // Lookups laden
   useEffect(() => {
-    fetch("/api/lookups")
+    fetch("/api/lookups-central")
       .then((res) => res.json())
-      .then((data: Lookups) => setLookups(data))
+      .then((data) => setLookups({
+        organizers: data.organizers.map((o: any) => o.name),
+        locations: data.locations.map((l: any) => l.name),
+        types: data.types.map((t: any) => t.name),
+        timeSlots: data.timeSlots.map((ts: any) => ts.name),
+      }))
       .catch((err) => console.error("Lookup fetch error", err));
   }, []);
 
   // Events laden
   useEffect(() => {
-    //console.log("Events useEffect läuft", { pagination, sorting, columnFilters, dateFilters });
-    const query = buildQuery({ pagination, sorting, columnFilters, dateFilters });
+    const query = buildQuery({
+      pagination,
+      sorting,
+      columnFilters,
+      dateFilters,
+      search: debouncedSearch,
+    });
 
     fetch(`/api/events?${query}`)
       .then((res) => res.json())
       .then((json: EventsResponse) => {
-        //console.log("EventsResponse", json);
         setData(json.data);
         setTotal(json.total);
         setPageCount(json.pageCount);
       })
       .catch((err) => console.error("Events fetch error", err));
-  }, [pagination, sorting, columnFilters, dateFilters, reload]);
+  }, [pagination, sorting, columnFilters, dateFilters, debouncedSearch, reload]);
 
   const columns = useMemo<ColumnDef<EventRow>[]>(
     () => [
@@ -142,81 +147,51 @@ export function EventsTable({ reload, onEdit, onDelete }: EventsTableProps) {
         accessorKey: "startDate",
         header: "Start",
         enableSorting: true,
-        cell: (info) => {
-          const value = info.getValue() as string;
-          return new Date(value).toLocaleDateString("de-DE");
-        },
+        cell: (info) => new Date(info.getValue() as string).toLocaleDateString("de-DE"),
       },
       {
         accessorKey: "endDate",
         header: "Ende",
         enableSorting: true,
         cell: (info) => {
-          const value = info.getValue() as string | null;
-          return value ? new Date(value).toLocaleDateString("de-DE") : "";
+          const v = info.getValue() as string | null;
+          return v ? new Date(v).toLocaleDateString("de-DE") : "";
         },
       },
-      {
-        accessorKey: "organizer",
-        header: "Veranstalter",
-        enableSorting: true,
-        enableColumnFilter: true,
-      },
-      {
-        accessorKey: "location",
-        header: "Ort",
-        enableSorting: true,
-        enableColumnFilter: true,
-      },
-      {
-        accessorKey: "type",
-        header: "Typ",
-        enableSorting: true,
-        enableColumnFilter: true,
-      },
-      {
-        accessorKey: "timeSlot",
-        header: "Zeitfenster",
-        enableSorting: true,
-        enableColumnFilter: true,
-      },
+      { accessorKey: "organizer", header: "Veranstalter", enableSorting: true },
+      { accessorKey: "location", header: "Ort", enableSorting: true },
+      { accessorKey: "type", header: "Typ", enableSorting: true },
+      { accessorKey: "timeSlot", header: "Zeitfenster", enableSorting: true },
       {
         id: "actions",
         header: "",
         enableSorting: false,
-        enableColumnFilter: false,
         cell: ({ row }) => (
           <div className="flex gap-2 justify-end">
             <button
-              className="btn btn-xs btn-ghost text-red-400"
+              className="btn btn-xs btn-ghost"
               onClick={() => onEdit(row.original)}
             >
-              <PencilIcon className="h-6 w-6" />
+              <PencilIcon className="h-5 w-5 text-red-400" />
             </button>
-
             <button
-              className="btn btn-xs btn-ghost text-error"
+              className="btn btn-xs btn-ghost"
               onClick={() => onDelete(row.original)}
             >
-              <TrashIcon className="h-6 w-6 text-blue-600 text-base" />
+              <TrashIcon className="h-5 w-5 text-blue-600" />
             </button>
-
-          </div >
+          </div>
         ),
       },
     ],
-    [onEdit],
+    [onEdit]
   );
 
   const table = useReactTable({
     data,
     columns,
     pageCount,
-    state: {
-      pagination,
-      sorting,
-      columnFilters,
-    },
+    state: { pagination, sorting, columnFilters },
     manualPagination: true,
     manualSorting: true,
     manualFiltering: true,
@@ -230,12 +205,30 @@ export function EventsTable({ reload, onEdit, onDelete }: EventsTableProps) {
 
   return (
     <div className="space-y-4">
-      <div className="card bg-base-200 shadow border-1 p-4 space-y-6" >
+      <div className="card bg-base-200 shadow border-1 p-4 space-y-4">
+
+        {/* Freitextsuche */}
+        <div className="relative">
+          <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <input
+            type="text"
+            className="input input-bordered w-full pl-9"
+            placeholder="Suche nach Veranstalter, Ort, Typ oder Bemerkung…"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+          />
+          {searchInput && (
+            <button
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              onClick={() => setSearchInput("")}
+            >
+              ✕
+            </button>
+          )}
+        </div>
 
         {/* Filterzeile 1 */}
-        < div className="grid grid-cols-3 gap-4" >
-
-          {/* Veranstalter */}
+        <div className="grid grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-bold mb-1">Veranstalter</label>
             <select
@@ -250,9 +243,8 @@ export function EventsTable({ reload, onEdit, onDelete }: EventsTableProps) {
                 <option key={o} value={o}>{o}</option>
               ))}
             </select>
-          </div >
+          </div>
 
-          {/* Ort */}
           <div>
             <label className="block text-sm font-bold mb-1">Ort</label>
             <select
@@ -267,9 +259,8 @@ export function EventsTable({ reload, onEdit, onDelete }: EventsTableProps) {
                 <option key={l} value={l}>{l}</option>
               ))}
             </select>
-          </div >
+          </div>
 
-          {/* Typ */}
           <div>
             <label className="block text-sm font-medium mb-1">Typ</label>
             <select
@@ -284,14 +275,11 @@ export function EventsTable({ reload, onEdit, onDelete }: EventsTableProps) {
                 <option key={t} value={t}>{t}</option>
               ))}
             </select>
-          </div >
-
-        </div >
+          </div>
+        </div>
 
         {/* Filterzeile 2 */}
-        < div className="grid grid-cols-3 gap-4" >
-
-          {/* Start ab */}
+        <div className="grid grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium mb-1">Start ab</label>
             <input
@@ -302,9 +290,8 @@ export function EventsTable({ reload, onEdit, onDelete }: EventsTableProps) {
                 setDateFilters((old) => ({ ...old, startDateFrom: e.target.value }))
               }
             />
-          </div >
+          </div>
 
-          {/* Start bis */}
           <div>
             <label className="block text-sm font-medium mb-1">Start bis</label>
             <input
@@ -315,24 +302,25 @@ export function EventsTable({ reload, onEdit, onDelete }: EventsTableProps) {
                 setDateFilters((old) => ({ ...old, startDateTo: e.target.value }))
               }
             />
-          </div >
+          </div>
 
-          {/* Reset */}
-          <div className="flex items-end" >
+          <div className="flex items-end">
             <button
-              className="border rounded px-3 py-1 text-1xl bg-teal-600 rounded-lg text-white w-full"
-              onClick={() => setDateFilters({ startDateFrom: "", startDateTo: "" })}
+              className="border rounded px-3 py-1 bg-teal-600 rounded-lg text-white w-full"
+              onClick={() => {
+                setDateFilters({ startDateFrom: "", startDateTo: "" });
+                setSearchInput("");
+                setColumnFilters([]);
+              }}
             >
-              Datum zurücksetzen
+              Alle Filter zurücksetzen
             </button>
-          </div >
-
-        </div >
-
-      </div >
+          </div>
+        </div>
+      </div>
 
       {/* Tabelle */}
-      <div className="overflow-x-auto border-1 rounded" >
+      <div className="overflow-x-auto border-1 rounded">
         <table className="table-compact min-w-full text-sm">
           <thead className="bg-gray-100">
             {table.getHeaderGroups().map((hg) => (
@@ -344,16 +332,12 @@ export function EventsTable({ reload, onEdit, onDelete }: EventsTableProps) {
                     <th
                       key={header.id}
                       className="px-3 py-2 text-left cursor-pointer select-none"
-                      onClick={
-                        canSort
-                          ? header.column.getToggleSortingHandler()
-                          : undefined
-                      }
+                      onClick={canSort ? header.column.getToggleSortingHandler() : undefined}
                     >
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(header.column.columnDef.header, header.getContext())}
-
+                      {header.isPlaceholder ? null : flexRender(
+                        header.column.columnDef.header,
+                        header.getContext()
+                      )}
                       {canSort && (
                         <span className="ml-1 text-xs">
                           {sortDir === "asc" && "▲"}
@@ -369,28 +353,27 @@ export function EventsTable({ reload, onEdit, onDelete }: EventsTableProps) {
           <tbody>
             {table.getRowModel().rows.length === 0 ? (
               <tr>
-                <td className="px-3 py-4 text-center" colSpan={columns.length}>
+                <td className="px-3 py-6 text-center text-gray-400" colSpan={columns.length}>
                   Keine Einträge gefunden.
                 </td>
               </tr>
             ) : (
               table.getRowModel().rows.map((row) => (
-                <tr key={row.id} className="border-t odd:bg-green-200 hover:bg-green-400  cursor-pointer">
+                <tr key={row.id} className="border-t odd:bg-green-200 hover:bg-green-400 cursor-pointer">
                   {row.getVisibleCells().map((cell) => (
                     <td key={cell.id} className="px-3 py-2">
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </td>
                   ))}
-
                 </tr>
               ))
             )}
           </tbody>
         </table>
-      </div >
+      </div>
 
       {/* Pagination */}
-      <div className="flex items-center justify-between gap-4" >
+      <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-2">
           <button
             className="border rounded px-2 py-1 text-sm"
@@ -422,14 +405,10 @@ export function EventsTable({ reload, onEdit, onDelete }: EventsTableProps) {
           </button>
         </div>
 
-        <div>
-          <span className="text-sm"> Anzahl Datensätze: {total} </span>
-        </div>
+        <span className="text-sm">Anzahl Datensätze: {total}</span>
 
         <div className="flex items-center gap-2 text-sm">
-          <span>
-            Seite {pagination.pageIndex + 1} von {pageCount || 1}
-          </span>
+          <span>Seite {pagination.pageIndex + 1} von {pageCount || 1}</span>
           <select
             className="border rounded px-2 py-1"
             value={pagination.pageSize}
@@ -442,13 +421,11 @@ export function EventsTable({ reload, onEdit, onDelete }: EventsTableProps) {
             }
           >
             {[5, 10, 20, 50].map((size) => (
-              <option key={size} value={size}>
-                {size} / Seite
-              </option>
+              <option key={size} value={size}>{size} / Seite</option>
             ))}
           </select>
         </div>
-      </div >
-    </div >
+      </div>
+    </div>
   );
 }

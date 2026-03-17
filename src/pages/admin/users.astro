@@ -1,0 +1,23 @@
+---
+export const prerender = false;
+
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { UsersTable } from "../../components/admin/UsersTable";
+import { auth } from "../../lib/auth";
+
+const session = await auth.api.getSession({
+  headers: Astro.request.headers,
+});
+---
+
+<BaseLayout title="Admin-Verwaltung">
+  <div class="space-y-4">
+    <h1 class="text-2xl font-bold">Admin-Verwaltung</h1>
+    <p class="text-gray-500 text-sm">
+      Hier kannst du Admin-Accounts anlegen, Passwörter ändern und Accounts
+      löschen. Jeder Account hat vollen Zugriff auf den Admin-Bereich.
+    </p>
+
+    <UsersTable currentUserId={session?.user.id ?? ""} client:load />
+  </div>
+</BaseLayout>
