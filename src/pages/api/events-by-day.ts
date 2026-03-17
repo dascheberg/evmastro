@@ -29,6 +29,8 @@ export const GET: APIRoute = async ({ url }) => {
             eventTypeName: eventTypes.name,
             organizerName: organizers.name,
             timeSlotStart: timeSlots.name,
+            notes: events.notes,        // ← NEU
+            recurrence: events.recurrence,   // ← NEU
         })
         .from(events)
         .leftJoin(locations, eq(events.locationId, locations.id))
@@ -38,9 +40,7 @@ export const GET: APIRoute = async ({ url }) => {
         .where(sql`DATE(${events.startDate}) = ${date}`)
         .orderBy(events.startDate);
 
-    const display = rows.map(toDisplayEvent);
-
-    return new Response(JSON.stringify(display), {
+    return new Response(JSON.stringify(rows.map(toDisplayEvent)), {
         headers: { "Content-Type": "application/json" },
     });
 };

@@ -109,6 +109,13 @@ export function ListView({ filters, onSelectEvent }: {
         doc.save("veranstaltungen.pdf");
     }
 
+    // ── Print ────────────────────────────────────────────────────────────────
+
+    function openPrint() {
+        window.open(`/print?${buildParams()}`, "_blank");
+    }
+
+
     // ── Render ────────────────────────────────────────────────────────────────
 
     return (
@@ -129,6 +136,14 @@ export function ListView({ filters, onSelectEvent }: {
                         disabled={events.length === 0}
                     >
                         📑 PDF
+                    </button>
+                    <button
+                        className="btn btn-sm btn-outline"
+                        onClick={openPrint}
+                        disabled={events.length === 0}
+                        title="Druckansicht öffnen"
+                    >
+                        🖨️ Drucken
                     </button>
                     <button
                         className="btn btn-sm btn-outline"

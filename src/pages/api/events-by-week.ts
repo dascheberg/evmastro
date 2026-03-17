@@ -20,6 +20,19 @@ export const GET: APIRoute = async ({ url }) => {
         return new Response(JSON.stringify([]));
     }
 
+    const conditions: any[] = [
+        gte(events.startDate, start),
+        lte(events.startDate, end),
+    ];
+
+    const organizerId = url.searchParams.get("organizerId");
+    const locationId = url.searchParams.get("locationId");
+    const typeId = url.searchParams.get("typeId");
+
+    if (organizerId) conditions.push(eq(events.organizerId, Number(organizerId)));
+    if (locationId) conditions.push(eq(events.locationId, Number(locationId)));
+    if (typeId) conditions.push(eq(events.typeId, Number(typeId)));
+
     const rows = await db
         .select({
             id: events.id,
@@ -29,13 +42,15 @@ export const GET: APIRoute = async ({ url }) => {
             eventTypeName: eventTypes.name,
             organizerName: organizers.name,
             timeSlotStart: timeSlots.name,
+            notes: events.notes,        // ← NEU
+            recurrence: events.recurrence,   // ← NEU
         })
         .from(events)
         .leftJoin(locations, eq(events.locationId, locations.id))
         .leftJoin(eventTypes, eq(events.typeId, eventTypes.id))
         .leftJoin(organizers, eq(events.organizerId, organizers.id))
         .leftJoin(timeSlots, eq(events.timeId, timeSlots.id))
-        .where(and(gte(events.startDate, start), lte(events.startDate, end)))
+        .where(and(...conditions))
         .orderBy(events.startDate);
 
     return new Response(JSON.stringify(rows.map(toDisplayEvent)));

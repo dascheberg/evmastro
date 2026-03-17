@@ -7,7 +7,7 @@ import {
     eventTypes,
     timeSlots,
 } from "../../db/schema";
-import { eq, gte, lte, and } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { toDisplayEvent } from "../../utils/eventDisplay";
 
 export const prerender = false;
@@ -22,7 +22,6 @@ export const GET: APIRoute = async () => {
     const nextMonth = new Date(today);
     nextMonth.setMonth(today.getMonth() + 1);
 
-    // 1) ALLE Events holen (mit Lookup-Tabellen)
     const rows = await db
         .select({
             id: events.id,
@@ -32,6 +31,8 @@ export const GET: APIRoute = async () => {
             eventTypeName: eventTypes.name,
             organizerName: organizers.name,
             timeSlotStart: timeSlots.name,
+            notes: events.notes,        // ← NEU
+            recurrence: events.recurrence,   // ← NEU
         })
         .from(events)
         .leftJoin(locations, eq(events.locationId, locations.id))
@@ -40,26 +41,26 @@ export const GET: APIRoute = async () => {
         .leftJoin(timeSlots, eq(events.timeId, timeSlots.id))
         .orderBy(events.startDate);
 
-    // 2) Rohdaten → DisplayEvent
     const display = rows.map(toDisplayEvent);
 
-    // 3) Filterlogik
+    // Filterlogik mit korrektem Datum-Parser
+    function parseDate(dateLabel: string): Date {
+        const [day, month, year] = dateLabel.split(".");
+        return new Date(`${year}-${month}-${day}`);
+    }
+
     const todayEvents = display.filter((ev) => {
-        const [day, month, year] = ev.dateLabel.split(".");
-        const d = new Date(`${year}-${month}-${day}`);
-        // const d = new Date(ev.dateLabel.split(".").reverse().join("-"));
+        const d = parseDate(ev.dateLabel);
         return d.toDateString() === today.toDateString();
     });
 
     const weekEvents = display.filter((ev) => {
-        const [day, month, year] = ev.dateLabel.split(".");
-        const d = new Date(`${year}-${month}-${day}`);
+        const d = parseDate(ev.dateLabel);
         return d > today && d <= nextWeek;
     });
 
     const monthEvents = display.filter((ev) => {
-        const [day, month, year] = ev.dateLabel.split(".");
-        const d = new Date(`${year}-${month}-${day}`);
+        const d = parseDate(ev.dateLabel);
         return d > nextWeek && d <= nextMonth;
     });
 

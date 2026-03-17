@@ -6,6 +6,8 @@ export interface RawEvent {
     eventTypeName: string;
     organizerName: string;
     timeSlotStart: string;
+    notes?: string | null;
+    recurrence?: any;
 }
 
 export interface DisplayEvent {
@@ -15,6 +17,7 @@ export interface DisplayEvent {
     locationLabel: string;
     typeLabel: string;
     organizerLabel: string;
+    raw?: RawEvent;  // komplettes Rohobjekt für Detailansicht
 }
 
 export function toDisplayEvent(ev: RawEvent): DisplayEvent {
@@ -23,9 +26,10 @@ export function toDisplayEvent(ev: RawEvent): DisplayEvent {
     return {
         id: ev.id,
         dateLabel: date.toLocaleDateString("de-DE"),
-        timeLabel: ev.timeSlotStart, // WICHTIG: NICHT aus startDate!
+        timeLabel: ev.timeSlotStart,
         locationLabel: ev.locationName,
         typeLabel: ev.eventTypeName,
         organizerLabel: ev.organizerName,
+        raw: ev,   // alles mitgeben inkl. notes + recurrence
     };
 }
