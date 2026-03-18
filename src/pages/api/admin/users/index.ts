@@ -19,6 +19,7 @@ export const GET: APIRoute = async ({ request }) => {
       name: user.name,
       email: user.email,
       createdAt: user.createdAt,
+      notify: user.notify,       // NEU
     })
     .from(user)
     .orderBy(user.name);
