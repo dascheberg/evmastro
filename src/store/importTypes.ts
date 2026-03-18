@@ -2,7 +2,7 @@
 // Grundtypen
 // -----------------------------
 
-export type ImportStep = 1 | 2 | 3 | 4 | 5 | "5b" | 6;
+export type ImportStep = 1 | 2 | 3 | 4 | 5 | "5a" | "5b" | 6;
 
 export type Row = string[];
 

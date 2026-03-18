@@ -7,6 +7,7 @@ import HeaderChoice from "./HeaderChoice";
 import MappingMask from "./MappingMask";
 import PreviewTable from "./PreviewTable";
 import UnresolvedValuesStep from "./UnresolvedValuesStep";
+import DuplicatesStep from "./DuplicatesStep";
 import StepButtons from "../utils/import/StepButtons";
 import ImportHeader from "../utils/import/ImportHeader";
 
@@ -40,6 +41,9 @@ export default function ImportFlow({
 
     const [fileSelected, setFileSelected] = useState(false);
 
+    // Duplikate State
+    const [importDuplicates, setImportDuplicates] = useState<any[]>([]);
+
     // Lookup-Listen als State damit wir sie nach "Anlegen" aktualisieren können
     const [currentTimeSlots, setCurrentTimeSlots] = useState(timeSlots);
     const [currentLocations, setCurrentLocations] = useState(locations);
@@ -51,7 +55,44 @@ export default function ImportFlow({
 
     // ── Schritt 5 → 5b oder 6 ────────────────────────────────────────────────
 
-    function handlePreviewConfirm() {
+    async function handlePreviewConfirm() {
+        // Schritt 1: Duplikate prüfen
+        try {
+            // Für die Duplikat-Prüfung brauchen wir die IDs – erst auflösen was möglich ist
+            const preResolved = events.map((ev) =>
+                resolveEventIds(ev, {
+                    timeSlots: currentTimeSlots,
+                    locations: currentLocations,
+                    eventTypes: currentEventTypes,
+                })
+            );
+
+            const candidates = preResolved.map((ev, idx) => ({
+                startDate: ev.startDate,
+                organizerId: ev.organizerId,
+                locationId: ev.locationId ?? 0,
+                typeId: ev.typeId ?? 0,
+            })).filter((c) => c.locationId && c.typeId);
+
+            const res = await fetch("/api/check-duplicates", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(candidates),
+            });
+
+            const duplicates = await res.json();
+
+            if (duplicates.length > 0) {
+                // Duplikate gefunden → Schritt 5a
+                setImportDuplicates(duplicates);
+                goToStep("5a");
+                return;
+            }
+        } catch {
+            // Bei Fehler: Duplikat-Prüfung überspringen
+        }
+
+        // Schritt 2: Unbekannte Werte prüfen
         const unresolved = findUnresolvedValues(events, {
             timeSlots: currentTimeSlots,
             locations: currentLocations,
@@ -59,12 +100,40 @@ export default function ImportFlow({
         });
 
         if (unresolved.length > 0) {
-            // Es gibt unbekannte Werte → Schritt 5b
             setUnresolvedItems(unresolved);
             goToStep("5b");
         } else {
-            // Alles bekannt → direkt zu Schritt 6
             const resolved = events.map((ev) =>
+                resolveEventIds(ev, {
+                    timeSlots: currentTimeSlots,
+                    locations: currentLocations,
+                    eventTypes: currentEventTypes,
+                })
+            );
+            setResolvedEvents(resolved);
+            goToStep(6);
+        }
+    }
+
+    // ── Schritt 5a: Duplikate behandelt ──────────────────────────────────────
+
+    function handleDuplicatesComplete(discardedIndices: number[]) {
+        // Verworfene Events aus der Liste entfernen
+        const filteredEvents = events.filter((_, idx) => !discardedIndices.includes(idx));
+        useImportStore.getState().setEvents(filteredEvents);
+
+        // Weiter zu Schritt 5b (Unbekannte Werte)
+        const unresolved = findUnresolvedValues(filteredEvents, {
+            timeSlots: currentTimeSlots,
+            locations: currentLocations,
+            eventTypes: currentEventTypes,
+        });
+
+        if (unresolved.length > 0) {
+            setUnresolvedItems(unresolved);
+            goToStep("5b");
+        } else {
+            const resolved = filteredEvents.map((ev) =>
                 resolveEventIds(ev, {
                     timeSlots: currentTimeSlots,
                     locations: currentLocations,
@@ -215,6 +284,17 @@ export default function ImportFlow({
                         events={events}
                         onBack={prevStep}
                         onConfirm={handlePreviewConfirm}
+                    />
+                </div>
+            )}
+
+            {/* STEP 5a – Duplikate klären */}
+            {step === "5a" && (
+                <div className="p-6 space-y-6">
+                    <DuplicatesStep
+                        duplicates={importDuplicates}
+                        onComplete={handleDuplicatesComplete}
+                        onBack={() => goToStep(5)}
                     />
                 </div>
             )}
