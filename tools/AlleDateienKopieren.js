@@ -13,6 +13,9 @@ const excludedDirectories = [
   ".vscode",
   "tools",
   "drizzle",
+  ".vercel",
+  "dist",
+  ".astro",
 ];
 const excludedFiles = [
   ".env",

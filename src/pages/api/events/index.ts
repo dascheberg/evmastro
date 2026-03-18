@@ -8,6 +8,7 @@ import {
   timeSlots,
 } from "../../../db/schema";
 import { eq, sql, asc, desc, and, gte, lte, or, ilike } from "drizzle-orm";
+import { notifyEventCreated } from "../../../lib/email";
 
 export const prerender = false;
 
@@ -133,7 +134,26 @@ export const POST: APIRoute = async ({ request }) => {
       })
       .returning();
 
-    return new Response(JSON.stringify(newEvent[0]), {
+    // ── E-Mail-Benachrichtigung ───────────────────────────────────────────────
+    const inserted = newEvent[0];
+    const [meta] = await db
+      .select({
+        organizerName: organizers.name,
+        locationName: locations.name,
+        typeName: eventTypes.name,
+        timeSlotName: timeSlots.name,
+      })
+      .from(events)
+      .leftJoin(organizers, eq(events.organizerId, organizers.id))
+      .leftJoin(locations, eq(events.locationId, locations.id))
+      .leftJoin(eventTypes, eq(events.typeId, eventTypes.id))
+      .leftJoin(timeSlots, eq(events.timeId, timeSlots.id))
+      .where(eq(events.id, inserted.id));
+
+    notifyEventCreated({ ...inserted, ...meta }).catch(console.error);
+    // ── Ende E-Mail ───────────────────────────────────────────────────────────
+
+    return new Response(JSON.stringify(inserted), {
       status: 201,
       headers: { "Content-Type": "application/json" },
     });

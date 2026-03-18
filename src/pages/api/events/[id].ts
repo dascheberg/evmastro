@@ -2,6 +2,9 @@ import type { APIRoute } from "astro";
 import { db } from "../../../db";
 import { events } from "../../../db/schema";
 import { eq } from "drizzle-orm";
+import { notifyEventUpdated, notifyEventDeleted } from "../../../lib/email";
+import { organizers, locations, eventTypes, timeSlots } from "../../../db/schema";
+
 
 export const prerender = false;
 
@@ -51,6 +54,24 @@ export const PUT: APIRoute = async ({ params, request }) => {
       .where(eq(events.id, id))
       .returning();
 
+    // ── E-Mail-Benachrichtigung ───────────────────────────────────────────────
+    const [meta] = await db
+      .select({
+        organizerName: organizers.name,
+        locationName: locations.name,
+        typeName: eventTypes.name,
+        timeSlotName: timeSlots.name,
+      })
+      .from(events)
+      .leftJoin(organizers, eq(events.organizerId, organizers.id))
+      .leftJoin(locations, eq(events.locationId, locations.id))
+      .leftJoin(eventTypes, eq(events.typeId, eventTypes.id))
+      .leftJoin(timeSlots, eq(events.timeId, timeSlots.id))
+      .where(eq(events.id, id));
+
+    notifyEventUpdated({ ...updated[0], ...meta }).catch(console.error);
+    // ── Ende E-Mail ───────────────────────────────────────────────────────────
+
     return new Response(JSON.stringify(updated[0]), {
       status: 200,
       headers: { "Content-Type": "application/json" },
@@ -71,7 +92,29 @@ export const DELETE: APIRoute = async ({ params }) => {
   }
 
   try {
+    // ── Daten VOR dem Löschen holen (für die Mail) ────────────────────────────
+    const [toDelete] = await db
+      .select({
+        startDate: events.startDate,
+        endDate: events.endDate,
+        organizerName: organizers.name,
+        locationName: locations.name,
+        typeName: eventTypes.name,
+        timeSlotName: timeSlots.name,
+      })
+      .from(events)
+      .leftJoin(organizers, eq(events.organizerId, organizers.id))
+      .leftJoin(locations, eq(events.locationId, locations.id))
+      .leftJoin(eventTypes, eq(events.typeId, eventTypes.id))
+      .leftJoin(timeSlots, eq(events.timeId, timeSlots.id))
+      .where(eq(events.id, id));
+    // ─────────────────────────────────────────────────────────────────────────
+
     await db.delete(events).where(eq(events.id, id));
+
+    if (toDelete) {
+      notifyEventDeleted({ id, ...toDelete }).catch(console.error);
+    }
 
     return new Response(JSON.stringify({ success: true }), {
       status: 200,

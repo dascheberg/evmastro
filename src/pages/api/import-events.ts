@@ -1,7 +1,9 @@
 import type { APIRoute } from "astro";
-import { db } from "../../db"
-import { events, importLog } from "../../db/schema";
+import { db } from "../../db";
 import { eq } from "drizzle-orm";
+import { notifyImport } from "../../lib/email";
+import { inArray } from "drizzle-orm";
+import { events, importLog, organizers, locations, eventTypes, timeSlots } from "../../db/schema";
 
 export const prerender = false;
 
@@ -42,6 +44,7 @@ export const POST: APIRoute = async ({ request }) => {
             .returning();
 
         // Import-Log mit echten IDs aktualisieren
+        // Import-Log mit echten IDs aktualisieren
         await db.update(importLog)
             .set({
                 count: inserted.length,
@@ -49,20 +52,41 @@ export const POST: APIRoute = async ({ request }) => {
             })
             .where(eq(importLog.id, log.id));
 
+        // ── E-Mail-Benachrichtigung ───────────────────────────────────────────
+        if (inserted.length > 0) {
+            const insertedWithMeta = await db
+                .select({
+                    id: events.id,
+                    startDate: events.startDate,
+                    endDate: events.endDate,
+                    organizerName: organizers.name,
+                    locationName: locations.name,
+                    typeName: eventTypes.name,
+                    timeSlotName: timeSlots.name,
+                })
+                .from(events)
+                .leftJoin(organizers, eq(events.organizerId, organizers.id))
+                .leftJoin(locations, eq(events.locationId, locations.id))
+                .leftJoin(eventTypes, eq(events.typeId, eventTypes.id))
+                .leftJoin(timeSlots, eq(events.timeId, timeSlots.id))
+                .where(inArray(events.id, inserted.map((e) => e.id)));
+
+            notifyImport(inserted.length, insertedWithMeta).catch(console.error);
+        }
+        // ── Ende E-Mail ───────────────────────────────────────────────────────
+
+        // ── Ende E-Mail ───────────────────────────────────────────────────────
+
         return new Response(
-            JSON.stringify({
-                success: true,
-                inserted: inserted.length,
-            }),
+            JSON.stringify({ success: true, inserted: inserted.length }),
             { status: 200 }
         );
+
     } catch (err) {
         console.error("Import-Fehler:", err);
-
         return new Response(
             JSON.stringify({ error: "Serverfehler beim Import" }),
             { status: 500 }
-
         );
     }
 };

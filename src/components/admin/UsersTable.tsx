@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
+import { useEffect, useState } from "react";
 import {
   PencilIcon,
   TrashIcon,
@@ -14,6 +15,7 @@ type AdminUser = {
   name: string;
   email: string;
   createdAt: string;
+  notify?: boolean;  // NEU: Ob der Admin Mail-Benachrichtigungen erhalten soll
 };
 
 type Props = {
@@ -178,6 +180,19 @@ export function UsersTable({ currentUserId }: Props) {
     }
   }
 
+  async function toggleNotify(id: string, value: boolean) {
+    try {
+      await fetch(`/api/admin/users/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ notify: value }),
+      });
+      await loadUsers();
+    } catch {
+      setError("Fehler beim Speichern der Mail-Einstellung.");
+    }
+  }
+
   // ── Render ────────────────────────────────────────────────────────────────
 
   if (loading) {
@@ -291,6 +306,7 @@ export function UsersTable({ currentUserId }: Props) {
             <th>Name</th>
             <th>E-Mail</th>
             <th>Angelegt am</th>
+            <th>Mail-Info</th>
             <th className="w-48">Aktionen</th>
           </tr>
         </thead>
@@ -312,6 +328,16 @@ export function UsersTable({ currentUserId }: Props) {
                 <td className="py-2 px-3 text-gray-500 text-sm">
                   {new Date(u.createdAt).toLocaleDateString("de-DE")}
                 </td>
+                {/* NEU: Mail-Benachrichtigung */}
+                <td className="py-2 px-3">
+                  <input
+                    type="checkbox"
+                    className="checkbox checkbox-sm"
+                    checked={u.notify ?? false}
+                    onChange={(e) => toggleNotify(u.id, e.target.checked)}
+                  />
+                </td>
+
                 <td className="py-2 px-3">
                   <div className="flex gap-2">
 
@@ -385,7 +411,7 @@ export function UsersTable({ currentUserId }: Props) {
               {/* Passwort-Ändern-Zeile (inline, klappt auf) */}
               {editingId === u.id && (
                 <tr className="bg-blue-50">
-                  <td colSpan={4} className="px-3 py-3">
+                  <td colSpan={5} className="px-3 py-3">
                     <div className="space-y-2">
                       <p className="text-sm font-medium text-blue-800">
                         Passwort ändern für {u.name}
@@ -427,7 +453,7 @@ export function UsersTable({ currentUserId }: Props) {
               {/* Löschen-Bestätigung */}
               {deletingId === u.id && (
                 <tr className="bg-red-50">
-                  <td colSpan={4} className="px-3 py-3">
+                  <td colSpan={5} className="px-3 py-3">
                     <p className="text-sm text-red-700 font-medium">
                       ⚠️ Soll der Account von <strong>{u.name}</strong> ({u.email}) wirklich gelöscht werden?
                     </p>
@@ -440,7 +466,7 @@ export function UsersTable({ currentUserId }: Props) {
 
           {users.length === 0 && (
             <tr>
-              <td colSpan={4} className="text-center py-6 text-gray-400">
+              <td colSpan={5} className="text-center py-6 text-gray-400">
                 Keine Admin-Accounts gefunden.
               </td>
             </tr>

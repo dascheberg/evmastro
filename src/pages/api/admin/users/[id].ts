@@ -53,7 +53,7 @@ export const DELETE: APIRoute = async ({ params, request }) => {
   }
 };
 
-// PUT – Passwort ändern
+// PUT – Passwort ändern ODER notify-Flag setzen
 export const PUT: APIRoute = async ({ params, request }) => {
   const currentSession = await auth.api.getSession({ headers: request.headers });
   if (!currentSession) {
@@ -66,6 +66,28 @@ export const PUT: APIRoute = async ({ params, request }) => {
   }
 
   const body = await request.json();
+
+  // ── Fall 1: notify-Flag ────────────────────────────────────────────────────
+  if (typeof body.notify === "boolean") {
+    try {
+      await db
+        .update(user)
+        .set({ notify: body.notify })
+        .where(eq(user.id, id));
+
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { "Content-Type": "application/json" },
+      });
+    } catch (err) {
+      console.error("PUT notify /api/admin/users error:", err);
+      return new Response(
+        JSON.stringify({ error: "Fehler beim Speichern der Mail-Einstellung." }),
+        { status: 500 }
+      );
+    }
+  }
+
+  // ── Fall 2: Passwort ändern (bisheriger Code, unverändert) ─────────────────
   const { password } = body;
 
   if (!password || password.length < 8) {
@@ -76,7 +98,6 @@ export const PUT: APIRoute = async ({ params, request }) => {
   }
 
   try {
-    // Passwort über Better Auth Context setzen
     await auth.api.setPassword({
       body: { newPassword: password, userId: id },
       headers: request.headers,

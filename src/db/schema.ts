@@ -53,12 +53,14 @@ export const events = pgTable("events", {
 
 // ── NEU: Auth-Tabellen für Better Auth ───────────────────────────────────────
 
+// src/db/schema.ts  — nur die geänderte user-Tabelle zeigen
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
   email: text("email").notNull().unique(),
   emailVerified: boolean("email_verified").notNull().default(false),
   image: text("image"),
+  notify: boolean("notify").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

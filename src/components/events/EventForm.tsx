@@ -15,7 +15,7 @@ type EventFormState = {
 type EventFormProps = {
     event: any | null;
     onSaved: () => void;
-    onCancel: () => void;
+    handleCancel: () => void;
 };
 
 type DuplicateInfo = {
@@ -39,7 +39,7 @@ const EMPTY_FORM: EventFormState = {
     notes: "",
 };
 
-export function EventForm({ event, onSaved, onCancel }: EventFormProps) {
+export function EventForm({ event, onSaved, handleCancel }: EventFormProps) {
 
     const [form, setForm] = useState<EventFormState>(EMPTY_FORM);
     const [isEndDateSynced, setIsEndDateSynced] = useState(true);
@@ -123,6 +123,16 @@ export function EventForm({ event, onSaved, onCancel }: EventFormProps) {
     function updateEndDate(value: string) {
         setForm(f => ({ ...f, endDate: value }));
         setIsEndDateSynced(value === form.startDate);
+    }
+
+    // Neue Hilfsfunktion für Reset + Cancel
+    function handleCancel() {
+        setForm(EMPTY_FORM);
+        setDuplicate(null);
+        setErrorMessage("");
+        setSuccessMessage("");
+        setIsEndDateSynced(true);
+        handleCancel();
     }
 
     async function save(ignoreDuplicate = false) {
@@ -221,9 +231,15 @@ export function EventForm({ event, onSaved, onCancel }: EventFormProps) {
                         </button>
                         <button
                             className="btn btn-sm btn-ghost"
-                            onClick={onCancel}
+                            onClick={() => {
+                                setDuplicate(null);
+                                setForm(EMPTY_FORM);
+                                setIsEndDateSynced(true);
+                                setErrorMessage("");
+                                setSuccessMessage("");
+                            }}
                         >
-                            Abbrechen
+                            Warnung schließen
                         </button>
                     </div>
                 </div>
@@ -301,8 +317,8 @@ export function EventForm({ event, onSaved, onCancel }: EventFormProps) {
                 </div>
             </div>
 
-            {!duplicate && (
-                <div className="flex gap-2 justify-center pt-4">
+            <div className="flex gap-2 justify-center pt-4">
+                {!duplicate && (
                     <button
                         className="btn bg-green-800 text-white font-bold text-base rounded-lg w-48 h-12"
                         onClick={() => save(false)}
@@ -310,15 +326,15 @@ export function EventForm({ event, onSaved, onCancel }: EventFormProps) {
                     >
                         {isSaving ? "Speichere..." : event ? "Speichern" : "Hinzufügen"}
                     </button>
-                    <button
-                        className="btn bg-red-800 text-white font-bold text-base rounded-lg w-48 h-12"
-                        onClick={onCancel}
-                        disabled={isSaving}
-                    >
-                        Abbrechen
-                    </button>
-                </div>
-            )}
+                )}
+                <button
+                    className="btn bg-red-800 text-white font-bold text-base rounded-lg w-48 h-12"
+                    onClick={handleCancel}
+                    disabled={isSaving}
+                >
+                    Abbrechen
+                </button>
+            </div>
         </div>
     );
 }
