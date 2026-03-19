@@ -96,6 +96,14 @@ const isAdmin = current.startsWith("/admin");
                   </li>
                   <li>
                     <a
+                      href="/admin/api-info"
+                      class={`text-red-600 ${current === "/admin/api-info" ? "font-bold" : ""}`}
+                    >
+                      API-Information
+                    </a>
+                  </li>
+                  <li>
+                    <a
                       href="/admin/users"
                       class={`text-red-600 ${current === "/admin/users" ? "font-bold" : ""}`}
                     >
@@ -164,6 +172,14 @@ const isAdmin = current.startsWith("/admin");
                         class={`text-red-600 ${current === "/admin/imports" ? "font-bold" : ""}`}
                       >
                         Import-Übersicht
+                      </a>
+                    </li>
+                    <li>
+                      <a
+                        href="/admin/api-info"
+                        class={`text-red-600 ${current === "/admin/api-info" ? "font-bold" : ""}`}
+                      >
+                        API-Information
                       </a>
                     </li>
                     <li>

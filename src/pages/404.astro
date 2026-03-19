@@ -2,20 +2,21 @@
 import BaseLayout from "../layouts/BaseLayout.astro";
 ---
 
-<BaseLayout />
-<img
-  src="/img/404pic.jpg"
-  width="60%"
-  class="mx-auto text-center"
-  alt="Bei der Arbeit"
-/>
+<BaseLayout>
+  <img
+    src="/img/404pic.jpg"
+    width="50%"
+    class="mx-auto text-center"
+    alt="Bei der Arbeit"
+  />
 
-<div class="text-2xl text-center w-2/3 h-screen mx-auto">
-  Diese Seite wird noch gebaut. Bitte haben Sie etwas Geduld.
-</div>
-
-<!-- <style>
-  * {
-    background-color: #a6c6a6;
-  }
-</style> -->
+  <div class="text-2xl text-center w-2/3 mx-auto">
+    Wir arbeiten wie die Verrückten, aber manches braucht eben länger oder es
+    wird es nie geben. Bitte habe Verständnis dafür, dass wir nicht alle Wünsche
+    erfüllen können. Aber wir geben unser Bestes, um die Seite so schnell wie
+    möglich fertigzustellen. Danke für deine Geduld!
+  </div>
+  <a href="/" class="btn bg-green-700 text-white px-8 rounded-lg">
+    Zur Startseite
+  </a>
+</BaseLayout>

@@ -1,0 +1,124 @@
+---
+export const prerender = false;
+import BaseLayout from "../../layouts/BaseLayout.astro";
+const base = `${Astro.url.origin}/api/public`;
+const ical = `${Astro.url.origin}/api/events-ical`;
+---
+
+<BaseLayout title="API-Information">
+  <div class="space-y-6 max-w-3xl w-2/3 mx-auto">
+    <div class="w-2§ mx-auto">
+      <h1 class="text-2xl font-bold">Öffentliche API</h1>
+      <p class="text-gray-500 text-sm mt-1">
+        Diese Endpunkte können von externen Websites ohne Login abgerufen
+        werden.
+      </p>
+    </div>
+
+    <!-- Events JSON -->
+    <div class="card w-2/3 mx-auto bg-base-100 shadow p-5 space-y-3">
+      <h2 class="text-lg font-bold text-green-800">Events als JSON</h2>
+      <p class="text-sm text-gray-600">
+        Gibt Veranstaltungen als JSON zurück. Ideal um Events auf einer anderen
+        Website anzuzeigen.
+      </p>
+
+      <div class="bg-gray-100 rounded p-3 text-sm font-mono break-all">
+        GET {base}/events
+      </div>
+
+      <table class="table table-compact w-full text-sm">
+        <thead class="text-xs text-gray-500">
+          <tr><th>Parameter</th><th>Beschreibung</th><th>Beispiel</th></tr>
+        </thead>
+        <tbody>
+          <tr
+            ><td>from</td><td>Startdatum (Standard: heute)</td><td
+              >2025-01-01</td
+            ></tr
+          >
+          <tr><td>to</td><td>Enddatum</td><td>2025-12-31</td></tr>
+          <tr><td>search</td><td>Freitextsuche</td><td>Feuerwehr</td></tr>
+          <tr
+            ><td>organizer</td><td>Filter Veranstalter</td><td>Sportverein</td
+            ></tr
+          >
+          <tr><td>location</td><td>Filter Ort</td><td>Gemeindehaus</td></tr>
+          <tr><td>type</td><td>Filter Veranstaltungsart</td><td>Vortrag</td></tr
+          >
+          <tr
+            ><td>limit</td><td>Max. Ergebnisse (Standard: 50, max: 200)</td><td
+              >100</td
+            ></tr
+          >
+        </tbody>
+      </table>
+
+      <div class="space-y-2">
+        <p class="text-xs font-semibold text-gray-500">Beispiele:</p>
+        <div class="bg-gray-100 rounded p-2 text-xs font-mono break-all">
+          {base}/events?limit=10
+        </div>
+        <div class="bg-gray-100 rounded p-2 text-xs font-mono break-all">
+          {base}/events?from=2025-01-01&to=2025-12-31&organizer=Feuerwehr
+        </div>
+      </div>
+
+      <div class="space-y-1">
+        <p class="text-xs font-semibold text-gray-500">Antwort-Format:</p>
+        <pre
+          class="bg-gray-100 rounded p-2 text-xs overflow-x-auto">{`{
+  "count": 2,
+  "events": [
+    {
+      "id": 42,
+      "startDate": "2025-06-15",
+      "endDate": "2025-06-15",
+      "organizer": "Feuerwehr Schmalfeld",
+      "location": "Gemeindehaus",
+      "type": "Übung",
+      "time": "19:00",
+      "notes": null
+    }
+  ]
+}`}</pre>
+      </div>
+
+      href={`${base}/events?limit=5`}
+      target="_blank" class="btn btn-sm bg-green-700 text-white" > Endpunkt testen
+      →
+    </div>
+  </div>
+
+  <!-- iCal -->
+  <div class="card bg-base-100 shadow p-5 space-y-3 w-2/3 mx-auto">
+    <h2 class="text-lg font-bold text-green-800 w-2/3 mx-auto">iCal-Feed</h2>
+    <p class="text-sm text-gray-600 w-2/3 mx-auto">
+      Zum Abonnieren in Kalender-Apps (Outlook, Google Calendar, Apple
+      Calendar). Einmal eingetragen aktualisiert sich der Kalender automatisch.
+    </p>
+
+    <div
+      class="bg-gray-100 rounded p-3 text-sm font-mono break-all w-2/3 mx-auto"
+    >
+      {ical}
+    </div>
+
+    <div class="flex gap-2 w-2/3 mx-auto flex-wrap">
+      href={ical}
+      target="_blank" class="btn btn-sm bg-green-700 text-white" > iCal öffnen →
+    </div>
+    <button
+      class="btn btn-sm btn-outline w-2/3 mx-auto"
+      onclick={`navigator.clipboard.writeText('${ical}'); this.textContent = 'Kopiert!'; setTimeout(() => this.textContent = 'Link kopieren', 2000)`}
+    >
+      Link kopieren
+    </button>
+  </div>
+  <div class="w-2/3 mx-auto">
+    <div class="alert alert-info text-sm py-2 w-2/3 mx-auto">
+      💡 In Google Calendar: Andere Kalender → Per URL hinzufügen → Link
+      einfügen
+    </div>
+  </div>
+</BaseLayout>
