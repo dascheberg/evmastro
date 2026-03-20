@@ -8,6 +8,9 @@ node_modules/
 
 #tools-Verzeichnis mit internen Hilfen
 tools/
+/tools/
+AlleDateienKopieren.js
+CodeEMADateien.txt
 
 # logs
 npm-debug.log*
@@ -27,3 +30,4 @@ pnpm-debug.log*
 # jetbrains setting folder
 .idea/
 .vercel
+
