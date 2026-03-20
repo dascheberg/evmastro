@@ -98,16 +98,7 @@ export const PUT: APIRoute = async ({ params, request }) => {
   }
 
   try {
-    // Better Auth's eigenen Hash-Mechanismus nutzen
-    await auth.api.signUpEmail({
-      body: {
-        email: (await db.select({ email: user.email }).from(user).where(eq(user.id, id)))[0].email,
-        password: password,
-        name: "",
-      },
-    }).catch(() => null); // ignorieren falls User schon existiert
-
-    // Passwort direkt über Better Auth setzen
+    // Better Auth's eigenen Hasher verwenden
     const ctx = await auth.$context;
     const hashed = await ctx.password.hash(password);
 
