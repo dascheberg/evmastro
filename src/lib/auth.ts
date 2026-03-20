@@ -20,6 +20,13 @@ export const auth = betterAuth({
     requireEmailVerification: false,
   },
 
+  // NEU:
+  trustedOrigins: [
+    "https://www.gemeinde24640.de",
+    "https://gemeinde24640.de",
+    "http://localhost:4321",
+  ],
+
   session: {
     expiresIn: 60 * 60 * 24 * 7,
     updateAge: 60 * 60 * 24,
