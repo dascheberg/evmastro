@@ -27,6 +27,16 @@ export const auth = betterAuth({
     "http://localhost:4321",
   ],
 
+  advanced: {
+    crossSubDomainCookies: {
+      enabled: false,
+    },
+    defaultCookieAttributes: {
+      sameSite: "lax",
+      secure: true,
+    },
+  },
+
   session: {
     expiresIn: 60 * 60 * 24 * 7,
     updateAge: 60 * 60 * 24,
