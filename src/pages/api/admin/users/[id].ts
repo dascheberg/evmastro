@@ -87,7 +87,7 @@ export const PUT: APIRoute = async ({ params, request }) => {
     }
   }
 
-  // ── Fall 2: Passwort ändern (bisheriger Code, unverändert) ─────────────────
+  // Fall 2: Passwort ändern
   const { password } = body;
 
   if (!password || password.length < 8) {
@@ -98,10 +98,23 @@ export const PUT: APIRoute = async ({ params, request }) => {
   }
 
   try {
-    await auth.api.setPassword({
-      body: { newPassword: password, userId: id },
-      headers: request.headers,
-    });
+    // Better Auth's eigenen Hash-Mechanismus nutzen
+    await auth.api.signUpEmail({
+      body: {
+        email: (await db.select({ email: user.email }).from(user).where(eq(user.id, id)))[0].email,
+        password: password,
+        name: "",
+      },
+    }).catch(() => null); // ignorieren falls User schon existiert
+
+    // Passwort direkt über Better Auth setzen
+    const ctx = await auth.$context;
+    const hashed = await ctx.password.hash(password);
+
+    await db
+      .update(account)
+      .set({ password: hashed })
+      .where(eq(account.userId, id));
 
     return new Response(JSON.stringify({ success: true }), {
       headers: { "Content-Type": "application/json" },
@@ -113,4 +126,4 @@ export const PUT: APIRoute = async ({ params, request }) => {
       { status: 500 }
     );
   }
-};
+}

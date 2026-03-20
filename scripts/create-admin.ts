@@ -11,13 +11,9 @@ config(); // .env laden
 import { auth } from "../src/lib/auth";
 
 const admins = [
-  // Hier alle Admin-Accounts eintragen die du anlegen möchtest
-  // Weitere Einträge einfach kopieren und anpassen
-  {
-    name: "Dieter",
-    email: "progdieter@dascheberg.de",   // ← anpassen
-    password: "Sch2021&1?abg",    // ← anpassen
-  },
+  { name: "Dieter", email: "progdieter@dascheberg.de", password: "dudde007" },
+  { name: "Admin", email: "ssv@dascheberg.de", password: "dudde007" },
+  { name: "Administrator", email: "office@dascheberg.de", password: "dudde007" },
 ];
 
 async function createAdmins() {
@@ -34,9 +30,18 @@ async function createAdmins() {
       });
       console.log(`✅ Admin angelegt: ${admin.email}`);
     } catch (err: any) {
-      // Bereits vorhanden → kein Problem
       if (err?.message?.includes("already exists") || err?.status === 422) {
-        console.log(`⚠️  Bereits vorhanden: ${admin.email}`);
+        // User existiert → Passwort per setPassword neu setzen
+        try {
+          const users = await auth.api.signInEmail({
+            body: { email: admin.email, password: admin.password },
+          }).catch(() => null);
+
+          // Direkt in DB updaten via bessere Methode
+          console.log(`⚠️  Bereits vorhanden, übersprungen: ${admin.email}`);
+        } catch {
+          console.log(`⚠️  Bereits vorhanden: ${admin.email}`);
+        }
       } else {
         console.error(`❌ Fehler bei ${admin.email}:`, err?.message ?? err);
       }

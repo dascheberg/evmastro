@@ -28,7 +28,8 @@ export const POST: APIRoute = async ({ request, redirect }) => {
 
     return new Response(null, { status: 302, headers });
 
-  } catch {
+  } catch (err: unknown) {
+    console.error("LOGIN FEHLER:", err);
     return redirect("/login?error=server_error");
   }
 };
