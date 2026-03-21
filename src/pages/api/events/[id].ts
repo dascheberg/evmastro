@@ -69,7 +69,16 @@ export const PUT: APIRoute = async ({ params, request }) => {
       .leftJoin(timeSlots, eq(events.timeId, timeSlots.id))
       .where(eq(events.id, id));
 
-    notifyEventUpdated({ ...updated[0], ...meta }).catch(console.error);
+    notifyEventUpdated({
+      id,
+      startDate: updated[0].startDate,
+      endDate: updated[0].endDate,
+      organizerName: meta?.organizerName ?? undefined,
+      locationName: meta?.locationName ?? undefined,
+      typeName: meta?.typeName ?? undefined,
+      timeSlotName: meta?.timeSlotName ?? undefined,
+      notes: updated[0].notes ?? undefined,
+    }).catch(console.error);
     // ── Ende E-Mail ───────────────────────────────────────────────────────────
 
     return new Response(JSON.stringify(updated[0]), {
@@ -113,7 +122,15 @@ export const DELETE: APIRoute = async ({ params }) => {
     await db.delete(events).where(eq(events.id, id));
 
     if (toDelete) {
-      notifyEventDeleted({ id, ...toDelete }).catch(console.error);
+      notifyEventDeleted({
+        id,
+        startDate: toDelete.startDate,
+        endDate: toDelete.endDate,
+        organizerName: toDelete.organizerName ?? undefined,
+        locationName: toDelete.locationName ?? undefined,
+        typeName: toDelete.typeName ?? undefined,
+        timeSlotName: toDelete.timeSlotName ?? undefined,
+      }).catch(console.error);
     }
 
     return new Response(JSON.stringify({ success: true }), {
