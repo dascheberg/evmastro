@@ -205,11 +205,9 @@ const isAdmin = current.startsWith("/admin");
               <span class="text-sm text-gray-500 hidden md:block">
                 {session.user.name || session.user.email}
               </span>
-              <form method="POST" action="/api/auth/logout">
-                <button type="submit" class="btn btn-sm btn-ghost text-red-600">
-                  Logout
-                </button>
-              </form>
+              <button id="logoutBtn" class="btn btn-sm btn-ghost text-red-600">
+                Logout
+              </button>
             </>
           ) : (
             <a href="/login" class="btn btn-sm btn-outline">
@@ -231,3 +229,12 @@ const isAdmin = current.startsWith("/admin");
     </footer>
   </body>
 </html>
+<script>
+  document.getElementById("logoutBtn")?.addEventListener("click", async () => {
+    await fetch("/api/auth/logout", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+    });
+    window.location.href = "/";
+  });
+</script>

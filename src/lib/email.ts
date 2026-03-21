@@ -6,7 +6,7 @@ import { eq } from "drizzle-orm";
 
 const resend = new Resend(import.meta.env.RESEND_API_KEY);
 
-const FROM = import.meta.env.NOTIFY_FROM_EMAIL ?? "EvMA <noreply@schmalfeld.de>";
+const FROM = import.meta.env.NOTIFY_FROM_EMAIL ?? "EvMA <noreply@gemeinde24640de>";
 const BASE_URL = import.meta.env.PUBLIC_BASE_URL ?? "https://evmastro.vercel.app";
 
 // ── Empfänger aus DB laden ────────────────────────────────────────────────────
