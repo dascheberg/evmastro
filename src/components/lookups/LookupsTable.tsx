@@ -129,7 +129,7 @@ export function LookupTable({ api, title }: Props) {
   // ── Löschen ───────────────────────────────────────────────────────────────
 
   async function confirmDelete(id: number) {
-    const res = await fetch(`${api}/${id}`, { method: "DELETE" });
+    const res = await fetch(`${api}/${id}`, { method: "DELETE", headers: { "Content-Type": "application/json" } });
 
     if (!res.ok) {
       const data = await res.json();

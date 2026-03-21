@@ -31,7 +31,14 @@ export function EventsAdminPage() {
 
                         if (!ok) return;
 
-                        await fetch(`/api/events/${ev.id}`, { method: "DELETE" });
+                        const res = await fetch(`/api/events/${ev.id}`, {
+                            method: "DELETE",
+                            headers: { "Content-Type": "application/json" },
+                        });
+                        if (!res.ok) {
+                            console.error("DELETE fehlgeschlagen:", res.status);
+                            return;
+                        }
                         setReload(r => r + 1);
                     }}
                 />
@@ -44,7 +51,7 @@ export function EventsAdminPage() {
                         setEditingEvent(null);
                         setReload((r) => r + 1);
                     }}
-                    onCancel={() => setEditingEvent(null)}
+                    handleCancel={() => setEditingEvent(null)}
                 />
             </div>
 

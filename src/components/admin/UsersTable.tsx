@@ -161,7 +161,7 @@ export function UsersTable({ currentUserId }: Props) {
 
   async function confirmDelete(id: string) {
     try {
-      const res = await fetch(`/api/admin/users/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/admin/users/${id}`, { method: "DELETE", headers: { "Content-Type": "application/json" } });
       const data = await res.json();
 
       if (!res.ok) {

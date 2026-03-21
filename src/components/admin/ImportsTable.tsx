@@ -50,7 +50,7 @@ export function ImportsTable() {
   async function confirmUndo(id: number) {
     setDeleteLoading(true);
     try {
-      const res = await fetch(`/api/admin/imports/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/admin/imports/${id}`, { method: "DELETE", headers: { "Content-Type": "application/json" } });
       const data = await res.json();
 
       if (!res.ok) {
@@ -115,8 +115,8 @@ export function ImportsTable() {
 
                 {/* Hauptzeile */}
                 <tr className={`border-t ${log.alreadyDeleted
-                    ? "bg-gray-50 opacity-60"
-                    : "odd:bg-green-100 hover:bg-green-200"
+                  ? "bg-gray-50 opacity-60"
+                  : "odd:bg-green-100 hover:bg-green-200"
                   }`}>
                   <td className="px-3 py-2 text-gray-400 text-sm">
                     {log.id}
@@ -144,8 +144,8 @@ export function ImportsTable() {
                     ) : (
                       <>
                         <span className={`font-semibold ${log.remainingCount < log.importedCount
-                            ? "text-orange-600"
-                            : "text-green-700"
+                          ? "text-orange-600"
+                          : "text-green-700"
                           }`}>
                           {log.remainingCount}
                         </span>
