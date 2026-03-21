@@ -4,7 +4,6 @@ export const prerender = false;
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { auth } from "../lib/auth";
 
-// Bereits eingeloggt? → direkt zum Admin-Dashboard
 const session = await auth.api.getSession({
   headers: Astro.request.headers,
 });
@@ -12,7 +11,6 @@ if (session) {
   return Astro.redirect("/admin/events");
 }
 
-// Fehler aus Query-Parameter auslesen (z.B. nach fehlgeschlagenem Login)
 const error = Astro.url.searchParams.get("error");
 ---
 
@@ -34,7 +32,7 @@ const error = Astro.url.searchParams.get("error");
         )
       }
 
-      <form method="POST" action="/api/auth/login" class="space-y-4">
+      <form id="loginForm" class="space-y-4">
         <div>
           <label class="label">
             <span class="label-text font-medium">E-Mail</span>
@@ -48,7 +46,6 @@ const error = Astro.url.searchParams.get("error");
             autofocus
           />
         </div>
-
         <div>
           <label class="label">
             <span class="label-text font-medium">Passwort</span>
@@ -61,11 +58,36 @@ const error = Astro.url.searchParams.get("error");
             required
           />
         </div>
-
         <button type="submit" class="btn bg-green-800 text-white w-full mt-2">
           Einloggen
         </button>
       </form>
+
+      <script>
+        document
+          .getElementById("loginForm")!
+          .addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const form = e.target as HTMLFormElement;
+            const email = (form.elements.namedItem("email") as HTMLInputElement)
+              .value;
+            const password = (
+              form.elements.namedItem("password") as HTMLInputElement
+            ).value;
+
+            const res = await fetch("/api/auth/login", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ email, password }),
+            });
+
+            if (res.redirected) {
+              window.location.href = res.url;
+            } else {
+              window.location.href = "/login?error=invalid_credentials";
+            }
+          });
+      </script>
     </div>
   </div>
 </BaseLayout>
