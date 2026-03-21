@@ -56,6 +56,11 @@ const isAdmin = current.startsWith("/admin");
                 >Veranstaltungen</a
               >
             </li>
+            <li>
+              <a href="/hilfe" class={current === "/hilfe" ? "font-bold" : ""}
+                >Hilfe</a
+              >
+            </li>
             {
               isLoggedIn && (
                 <>
@@ -130,6 +135,11 @@ const isAdmin = current.startsWith("/admin");
               href="/user"
               class={current.startsWith("/user") ? "font-bold" : ""}
               >Veranstaltungen</a
+            >
+          </li>
+          <li>
+            <a href="/hilfe" class={current === "/hilfe" ? "font-bold" : ""}
+              >Hilfe</a
             >
           </li>
           {

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { ArrowLeftIcon, ArrowRightIcon } from "@heroicons/react/24/solid";
 
 interface DayInfo {
     date: string;
@@ -71,7 +72,7 @@ export default function CalendarWidget({ onSelectDate }: { onSelectDate: (date: 
                         setCurrent(new Date(current.getFullYear(), current.getMonth() - 1, 1))
                     }
                 >
-                    ‹
+                    <ArrowLeftIcon className="h-6 w-6 font-bold" />
                 </button>
 
                 <h2 className="text-lg font-bold">
@@ -87,7 +88,7 @@ export default function CalendarWidget({ onSelectDate }: { onSelectDate: (date: 
                         setCurrent(new Date(current.getFullYear(), current.getMonth() + 1, 1))
                     }
                 >
-                    ›
+                    <ArrowRightIcon className="h-6 w-6" />
                 </button>
             </div>
 
