@@ -40,30 +40,32 @@ export default function ImportFlow({
     } = useImportStore();
 
     const [fileSelected, setFileSelected] = useState(false);
-
-    // Duplikate State
     const [importDuplicates, setImportDuplicates] = useState<any[]>([]);
 
-    // Lookup-Listen als State damit wir sie nach "Anlegen" aktualisieren können
+    // NEU: Multi-Modus State
+    const [multiMode, setMultiMode] = useState(false);
+
     const [currentTimeSlots, setCurrentTimeSlots] = useState(timeSlots);
     const [currentLocations, setCurrentLocations] = useState(locations);
     const [currentEventTypes, setCurrentEventTypes] = useState(eventTypes);
+    const [currentOrganizers, setCurrentOrganizers] = useState(organizers);
 
     useEffect(() => {
         setOrganizers(organizers);
+        setCurrentOrganizers(organizers);
     }, [organizers, setOrganizers]);
 
-    // ── Schritt 5 → 5b oder 6 ────────────────────────────────────────────────
+    // ── Schritt 5 → 5a oder 5b oder 6 ──────────────────────────────────────
 
     async function handlePreviewConfirm() {
-        // Schritt 1: Duplikate prüfen
         try {
-            // Für die Duplikat-Prüfung brauchen wir die IDs – erst auflösen was möglich ist
             const preResolved = events.map((ev) =>
                 resolveEventIds(ev, {
                     timeSlots: currentTimeSlots,
                     locations: currentLocations,
                     eventTypes: currentEventTypes,
+                    organizers: currentOrganizers,
+                    multiMode,
                 })
             );
 
@@ -83,20 +85,21 @@ export default function ImportFlow({
             const duplicates = await res.json();
 
             if (duplicates.length > 0) {
-                // Duplikate gefunden → Schritt 5a
                 setImportDuplicates(duplicates);
                 goToStep("5a");
                 return;
             }
         } catch {
-            // Bei Fehler: Duplikat-Prüfung überspringen
+            // Duplikat-Prüfung überspringen bei Fehler
         }
 
-        // Schritt 2: Unbekannte Werte prüfen
+        // Unbekannte Werte prüfen
         const unresolved = findUnresolvedValues(events, {
             timeSlots: currentTimeSlots,
             locations: currentLocations,
             eventTypes: currentEventTypes,
+            organizers: currentOrganizers,
+            multiMode,
         });
 
         if (unresolved.length > 0) {
@@ -108,6 +111,8 @@ export default function ImportFlow({
                     timeSlots: currentTimeSlots,
                     locations: currentLocations,
                     eventTypes: currentEventTypes,
+                    organizers: currentOrganizers,
+                    multiMode,
                 })
             );
             setResolvedEvents(resolved);
@@ -115,18 +120,18 @@ export default function ImportFlow({
         }
     }
 
-    // ── Schritt 5a: Duplikate behandelt ──────────────────────────────────────
+    // ── Schritt 5a: Duplikate ────────────────────────────────────────────────
 
     function handleDuplicatesComplete(discardedIndices: number[]) {
-        // Verworfene Events aus der Liste entfernen
         const filteredEvents = events.filter((_, idx) => !discardedIndices.includes(idx));
         useImportStore.getState().setEvents(filteredEvents);
 
-        // Weiter zu Schritt 5b (Unbekannte Werte)
         const unresolved = findUnresolvedValues(filteredEvents, {
             timeSlots: currentTimeSlots,
             locations: currentLocations,
             eventTypes: currentEventTypes,
+            organizers: currentOrganizers,
+            multiMode,
         });
 
         if (unresolved.length > 0) {
@@ -138,6 +143,8 @@ export default function ImportFlow({
                     timeSlots: currentTimeSlots,
                     locations: currentLocations,
                     eventTypes: currentEventTypes,
+                    organizers: currentOrganizers,
+                    multiMode,
                 })
             );
             setResolvedEvents(resolved);
@@ -145,29 +152,30 @@ export default function ImportFlow({
         }
     }
 
-    // ── Schritt 5b abgeschlossen ──────────────────────────────────────────────
+    // ── Schritt 5b: Unbekannte Werte ─────────────────────────────────────────
 
     async function handleUnresolvedComplete(
         decisions: Record<string, "add" | "discard" | null>,
         newIds: Record<string, number>
     ) {
-        // Lookup-Listen mit neu angelegten Werten aktualisieren
         const updatedTimeSlots = [...currentTimeSlots];
         const updatedLocations = [...currentLocations];
         const updatedEventTypes = [...currentEventTypes];
+        const updatedOrganizers = [...currentOrganizers];
 
         for (const [key, id] of Object.entries(newIds)) {
             const [field, value] = key.split("::");
             if (field === "timeSlot") updatedTimeSlots.push({ id, name: value });
             if (field === "location") updatedLocations.push({ id, name: value });
             if (field === "eventType") updatedEventTypes.push({ id, name: value });
+            if (field === "organizer") updatedOrganizers.push({ id, name: value }); // NEU
         }
 
         setCurrentTimeSlots(updatedTimeSlots);
         setCurrentLocations(updatedLocations);
         setCurrentEventTypes(updatedEventTypes);
+        setCurrentOrganizers(updatedOrganizers);
 
-        // Zeilen die verworfen werden sammeln
         const discardedIndices = new Set<number>();
         const discardedDetails: string[] = [];
 
@@ -181,7 +189,11 @@ export default function ImportFlow({
                     item.affectedRows.forEach((idx) => discardedIndices.add(idx));
                     item.affectedRows.forEach((idx) =>
                         discardedDetails.push(
-                            `Event #${idx + 1}: ${field === "timeSlot" ? "Uhrzeit" : field === "location" ? "Veranstaltungsort" : "Veranstaltungsart"} „${value}" nicht gefunden`
+                            `Event #${idx + 1}: ${field === "timeSlot" ? "Uhrzeit" :
+                                field === "location" ? "Veranstaltungsort" :
+                                    field === "organizer" ? "Veranstalter" :
+                                        "Veranstaltungsart"
+                            } „${value}" nicht gefunden`
                         )
                     );
                 }
@@ -191,7 +203,6 @@ export default function ImportFlow({
         setDiscardedRows(Array.from(discardedIndices));
         setDiscardedDetails(discardedDetails);
 
-        // Events ohne verworfene Zeilen auflösen
         const filteredEvents = events.filter((_, idx) => !discardedIndices.has(idx));
 
         const resolved = filteredEvents.map((ev) =>
@@ -199,6 +210,8 @@ export default function ImportFlow({
                 timeSlots: updatedTimeSlots,
                 locations: updatedLocations,
                 eventTypes: updatedEventTypes,
+                organizers: updatedOrganizers,
+                multiMode,
             })
         );
 
@@ -218,7 +231,10 @@ export default function ImportFlow({
                     <OrganizerSelect
                         organizers={organizers}
                         selectedId={organizerId}
-                        setSelectedId={(id) => { setOrganizerId(id); nextStep(); }}
+                        multiMode={multiMode}
+                        setSelectedId={(id) => setOrganizerId(id)}
+                        setMultiMode={setMultiMode}
+                        onNext={nextStep}
                     />
                 </div>
             )}
@@ -257,14 +273,25 @@ export default function ImportFlow({
                 <div className="p-6 space-y-6">
                     <MappingMask
                         rows={rows}
+                        multiMode={multiMode}
                         onBack={prevStep}
                         onComplete={(mappingResult) => {
                             setMapping(mappingResult);
 
-                            const rawEvents = applyMapping(rows, mappingResult, organizerId);
+                            // Im Single-Modus: organizerId fest; im Multi-Modus: aus Spalte lesen
+                            const rawEvents = applyMapping(
+                                rows,
+                                mappingResult,
+                                organizerId,
+                                multiMode
+                            );
                             const normalized = rawEvents.map((raw) => ({
                                 ...normalizeEvent(raw),
-                                organizerId,
+                                // Single: organizerId aus Store; Multi: wird später per lookup aufgelöst
+                                ...(multiMode
+                                    ? { organizer: raw.organizer }
+                                    : { organizerId }
+                                ),
                             }));
 
                             setEvents(normalized);
@@ -378,7 +405,6 @@ export default function ImportFlow({
 
                                     setSuccess(true);
 
-                                    // Nach 4 Sekunden zurück zum Dashboard
                                     setTimeout(() => {
                                         window.location.href = "/";
                                     }, 4000);

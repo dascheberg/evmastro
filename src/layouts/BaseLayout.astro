@@ -115,6 +115,14 @@ const isAdmin = current.startsWith("/admin");
                       Admin-Verwaltung
                     </a>
                   </li>
+                  <li>
+                    <a
+                      href="/admin/dokumentation"
+                      class={`text-red-600 ${current === "/admin/dokumentation" ? "font-bold" : ""}`}
+                    >
+                      Dokumentation
+                    </a>
+                  </li>
                 </>
               )
             }
@@ -198,6 +206,14 @@ const isAdmin = current.startsWith("/admin");
                         class={`text-red-600 ${current === "/admin/users" ? "font-bold" : ""}`}
                       >
                         Admin-Verwaltung
+                      </a>
+                    </li>
+                    <li>
+                      <a
+                        href="/admin/dokumentation"
+                        class={`text-red-600 ${current === "/admin/dokumentation" ? "font-bold" : ""}`}
+                      >
+                        Dokumentation
                       </a>
                     </li>
                   </ul>

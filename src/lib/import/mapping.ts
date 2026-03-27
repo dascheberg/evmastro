@@ -3,7 +3,8 @@ import type { Row, Mapping } from "../../store/importTypes";
 export function applyMapping(
     rows: Row[],
     mapping: Mapping,
-    organizerId: number
+    organizerId: number | null,
+    multiMode: boolean = false,
 ) {
     return rows
         // 1) Leere Zeilen ignorieren
@@ -24,7 +25,12 @@ export function applyMapping(
                 raw[fieldName] = row[index] ?? null;
             });
 
-            raw.organizerId = organizerId;
+            // Im Single-Modus: organizerId fest setzen
+            // Im Multi-Modus: organizer-Name aus der Spalte lesen (raw.organizer)
+            if (!multiMode) {
+                raw.organizerId = organizerId;
+            }
+
             return raw;
         });
 }
@@ -33,7 +39,8 @@ function isHeaderRow(row: Row): boolean {
     const headerKeywords = [
         "beginn", "start", "datum", "enddatum", "ende",
         "zeit", "uhrzeit", "ort", "location",
-        "art", "event", "veranstaltung", "typ", "type"
+        "art", "event", "veranstaltung", "typ", "type",
+        "veranstalter", "organizer",
     ];
 
     return row.some((cell) => {
@@ -44,16 +51,24 @@ function isHeaderRow(row: Row): boolean {
 }
 
 function isValidDataRow(row: Row, mapping: Mapping): boolean {
-    // Prüfen, ob die Spalte für startDate existiert
     const startDateCol = Object.entries(mapping).find(
         ([, fieldName]) => fieldName === "startDate"
     );
 
-    if (!startDateCol) return true; // kein Mapping → nicht filtern
+    if (!startDateCol) return true;
 
     const [colIndex] = startDateCol;
     const value = row[Number(colIndex)];
 
-    // gültiges Datum?
-    return Boolean(value && value.trim() !== "" && !isNaN(Date.parse(value)));
+    if (!value || value.trim() === "") return false;
+
+    const trimmed = value.trim();
+
+    // ISO-Format (kommt aus excelDateToString)
+    if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return true;
+
+    // Deutsches Format
+    if (/^\d{1,2}\.\d{1,2}\.\d{4}$/.test(trimmed)) return true;
+
+    return false;
 }

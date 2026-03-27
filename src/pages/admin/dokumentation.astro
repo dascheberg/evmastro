@@ -1,0 +1,176 @@
+---
+export const prerender = false;
+
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { auth } from "../../lib/auth";
+
+const session = await auth.api.getSession({ headers: Astro.request.headers });
+if (!session) return Astro.redirect("/login");
+
+const tab = Astro.url.searchParams.get("tab") ?? "admin";
+---
+
+<BaseLayout title="Dokumentation">
+  <div class="max-w-4xl mx-auto py-8 px-4 space-y-6">
+    <div class="flex items-center justify-between flex-wrap gap-4">
+      <div>
+        <h1 class="text-2xl font-bold text-gray-800">Dokumentation</h1>
+        <p class="text-sm text-gray-500 mt-1">
+          Handbücher zum Lesen und Herunterladen
+        </p>
+      </div>
+
+      <!-- Download-Buttons -->
+      <div class="flex gap-2 flex-wrap">
+        <a
+          href="/docs/evma-admin-handbuch.pdf"
+          download
+          class="btn btn-sm bg-green-800 text-white gap-2"
+        >
+          📥 Admin-Handbuch (PDF)
+        </a>
+        <a
+          href="/docs/evma-technische-dokumentation.pdf"
+          download
+          class="btn btn-sm btn-outline gap-2"
+        >
+          📥 Technische Doku (PDF)
+        </a>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs tabs-bordered">
+      <a
+        href="?tab=admin"
+        class={`tab tab-lg font-medium ${tab === "admin" ? "tab-active text-green-800" : ""}`}
+      >
+        📋 Admin-Handbuch
+      </a>
+      <a
+        href="?tab=tech"
+        class={`tab tab-lg font-medium ${tab === "tech" ? "tab-active text-green-800" : ""}`}
+      >
+        🔧 Technische Dokumentation
+      </a>
+    </div>
+
+    <!-- Inhalt -->
+    <div
+      class="prose prose-green max-w-none bg-white rounded-xl border p-8 shadow-sm"
+    >
+      {
+        tab === "admin" && (
+          <div id="admin-content">
+            <slot name="admin" />
+          </div>
+        )
+      }
+      {
+        tab === "tech" && (
+          <div id="tech-content">
+            <slot name="tech" />
+          </div>
+        )
+      }
+    </div>
+  </div>
+</BaseLayout>
+
+<!-- Markdown-Inhalte inline rendern -->
+<script>
+  // Inhalte per fetch laden und als HTML rendern (marked.js)
+  const tab = new URLSearchParams(window.location.search).get("tab") ?? "admin";
+  const contentDiv = document.getElementById(
+    tab === "admin" ? "admin-content" : "tech-content",
+  );
+
+  const file =
+    tab === "admin"
+      ? "/docs/evma-admin-handbuch.md"
+      : "/docs/evma-technische-dokumentation.md";
+
+  // Marked.js aus CDN laden
+  const script = document.createElement("script");
+  script.src =
+    "https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js";
+  script.onload = async () => {
+    const res = await fetch(file);
+    const md = await res.text();
+    if (contentDiv) {
+      contentDiv.innerHTML = window.marked.parse(md);
+    }
+  };
+  document.head.appendChild(script);
+</script>
+
+<style>
+  .prose h1 {
+    color: #2c5f2d;
+    font-size: 1.6rem;
+    margin-bottom: 0.5rem;
+  }
+  .prose h2 {
+    color: #2c5f2d;
+    font-size: 1.2rem;
+    margin-top: 1.8rem;
+    margin-bottom: 0.4rem;
+    border-bottom: 1px solid #97bc62;
+    padding-bottom: 4px;
+  }
+  .prose h3 {
+    color: #1a3b1b;
+    font-size: 1rem;
+    margin-top: 1.2rem;
+  }
+  .prose code {
+    background: #f1f5f1;
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-size: 0.85em;
+    color: #2c5f2d;
+  }
+  .prose pre {
+    background: #f1f5f1;
+    padding: 1rem;
+    border-radius: 8px;
+    border-left: 3px solid #97bc62;
+    overflow-x: auto;
+  }
+  .prose pre code {
+    background: none;
+    padding: 0;
+  }
+  .prose blockquote {
+    border-left: 3px solid #97bc62;
+    background: #f5f5f5;
+    padding: 0.5rem 1rem;
+    border-radius: 0 8px 8px 0;
+    color: #64748b;
+    font-style: italic;
+  }
+  .prose table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+  }
+  .prose th {
+    background: #2c5f2d;
+    color: white;
+    padding: 8px 12px;
+    text-align: left;
+  }
+  .prose td {
+    padding: 7px 12px;
+    border-bottom: 1px solid #e8f0e8;
+  }
+  .prose tr:nth-child(even) td {
+    background: #f5f5f5;
+  }
+  .prose a {
+    color: #2c5f2d;
+  }
+  .tab-active {
+    border-bottom-color: #2c5f2d !important;
+  }
+</style>

@@ -46,15 +46,30 @@ function excelTimeToString(value: number): string {
     return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
 }
 
+// Excel-Datum: Seriennummer → ISO-String (z.B. 46023 → "2026-01-01")
+function excelDateToString(serial: number): string {
+    // Excel zählt ab 1. Januar 1900, mit einem bekannten Bug (+1 für 1900)
+    const date = new Date(Date.UTC(1900, 0, serial - 1));
+    const y = date.getUTCFullYear();
+    const m = String(date.getUTCMonth() + 1).padStart(2, "0");
+    const d = String(date.getUTCDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+}
+
 function cleanRows(rows: any[][]): string[][] {
     return rows
         .map((row) =>
             row.map((cell) => {
                 if (cell == null) return "";
 
-                // Excel-Zeitwert?
+                // Excel-Zeitwert (Bruchteil eines Tages)
                 if (typeof cell === "number" && cell > 0 && cell < 1) {
                     return excelTimeToString(cell);
+                }
+
+                // NEU: Excel-Datums-Seriennummer (typischerweise > 40000 für Daten ab 2009)
+                if (typeof cell === "number" && cell >= 40000 && cell <= 60000) {
+                    return excelDateToString(cell);
                 }
 
                 // Alles andere als String

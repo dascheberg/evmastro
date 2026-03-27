@@ -32,6 +32,10 @@ export const GET: APIRoute = async ({ url }) => {
         const endStr = endDate.toISOString().split("T")[0];
         conditions.push(gte(events.startDate, startStr));
         conditions.push(lte(events.startDate, endStr));
+    } else if (year) {
+        // Nur Jahr gesetzt → ganzes Jahr filtern
+        conditions.push(gte(events.startDate, `${year}-01-01`));
+        conditions.push(lte(events.startDate, `${year}-12-31`));
     }
 
     // Freitextsuche über Veranstalter, Ort, Typ und Bemerkungen
