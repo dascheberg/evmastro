@@ -53,9 +53,9 @@ export function Filters({ mode, onChange }: Props) {
         >
             {/* Veranstalter */}
             <div className="flex flex-col">
-                <label className="text-xs text-gray-500">Veranstalter</label>
+                <label className="text-base text-gray-700">Veranstalter</label>
                 <select
-                    className="select select-sm select-bordered"
+                    className="select select-sm select-bordered text-base"
                     value={filters.organizerId ?? ""}
                     onChange={(e) =>
                         setFilters((f) => ({
@@ -75,9 +75,9 @@ export function Filters({ mode, onChange }: Props) {
 
             {/* Ort */}
             <div className="flex flex-col">
-                <label className="text-xs text-gray-500">Ort</label>
+                <label className="text-base text-gray-700">Ort</label>
                 <select
-                    className="select select-sm select-bordered"
+                    className="select select-sm select-bordered text-base"
                     value={filters.locationId ?? ""}
                     onChange={(e) =>
                         setFilters((f) => ({
@@ -97,9 +97,9 @@ export function Filters({ mode, onChange }: Props) {
 
             {/* Typ */}
             <div className="flex flex-col">
-                <label className="text-xs text-gray-500">Typ</label>
+                <label className="text-base text-gray-700">Typ</label>
                 <select
-                    className="select select-sm select-bordered"
+                    className="select select-sm select-bordered text-base"
                     value={filters.typeId ?? ""}
                     onChange={(e) =>
                         setFilters((f) => ({
@@ -119,8 +119,9 @@ export function Filters({ mode, onChange }: Props) {
 
             {/* Monat */}
             <div className="flex flex-col">
-                <label className="text-xs text-gray-500">Monat</label>
+                <label className="text-base text-gray-700">Monat</label>
                 <select
+                    className="w-36 h-8"
                     value={filters.month ?? ""}
                     onChange={(e) =>
                         setFilters((f) => ({
@@ -129,7 +130,7 @@ export function Filters({ mode, onChange }: Props) {
                         }))
                     }
                 >
-                    <option value="">Alle Monate</option>   {/* ← NEU */}
+                    <option value="" className="text-base">Alle Monate</option>   {/* ← NEU */}
                     {Array.from({ length: 12 }).map((_, i) => (
                         <option key={i + 1} value={i + 1}>
                             {new Date(2024, i, 1).toLocaleDateString("de-DE", { month: "long" })}
@@ -140,9 +141,9 @@ export function Filters({ mode, onChange }: Props) {
 
             {/* Jahr */}
             <div className="flex flex-col">
-                <label className="text-xs text-gray-500">Jahr</label>
+                <label className="text-base text-gray-700">Jahr</label>
                 <select
-                    className="select select-sm select-bordered"
+                    className="select select-sm select-bordered text-base"
                     value={filters.year}
                     onChange={(e) =>
                         setFilters((f) => ({ ...f, year: Number(e.target.value) }))
@@ -161,9 +162,9 @@ export function Filters({ mode, onChange }: Props) {
 
             {/* Suche */}
             <div className="flex flex-col">
-                <label className="text-xs text-gray-500">Suche</label>
+                <label className="text-base text-gray-700">Suche</label>
                 <input
-                    className="input input-sm input-bordered"
+                    className="input input-sm input-bordered w-72 h-8"
                     value={filters.search}
                     onChange={(e) =>
                         setFilters((f) => ({ ...f, search: e.target.value }))
@@ -173,7 +174,7 @@ export function Filters({ mode, onChange }: Props) {
 
             {/* Reset */}
             <button
-                className="btn btn-sm"
+                className="btn btn-base bg-red-600 text-white self-end rounded-lg text-base w-48 h-8"
                 onClick={() =>
                     setFilters({
                         organizerId: undefined,
