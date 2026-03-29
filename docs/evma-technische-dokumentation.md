@@ -11,7 +11,17 @@ EvMA ist ein webbasierter Veranstaltungskalender für die Gemeinde Schmalfeld. D
 
 **Produktiv-URL:** `https://www.gemeinde24640.de`
 **Repository:** lokal unter `~/dev/evmastro`
+<!-- liste dir die sinnvollsten Optionen auf:
+Empfehlungen nach Anwendungsfall
+1. VS Code (du hast es schon!) — für Entwickler ideal
+Du brauchst gar nichts neues installieren. VS Code hat eingebaut:
 
+Ctrl+Shift+V → Live-Vorschau in separatem Tab
+Ctrl+K V → Vorschau neben dem Editor (Split View)
+Extension "Markdown All in One" empfohlen: TOC, Shortcuts, Lint
+
+Für deine Projektdokumentation (EvMA, scschmalfeld etc.) ist das die naheliegendste Wahl, weil alles im selben Fenster bleibt.
+ -->
 ---
 
 ## 2. Technischer Stack

@@ -50,6 +50,7 @@ export const PUT: APIRoute = async ({ params, request }) => {
         locationId: body.locationId,
         timeId: body.timeSlotsId,
         notes: body.notes ?? null,
+        recurrence: body.recurrence ?? null,   // ← NEU
       })
       .where(eq(events.id, id))
       .returning();
@@ -144,4 +145,3 @@ export const DELETE: APIRoute = async ({ params }) => {
     });
   }
 };
-

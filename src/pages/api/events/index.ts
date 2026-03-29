@@ -131,6 +131,7 @@ export const POST: APIRoute = async ({ request }) => {
         locationId: body.locationId,
         timeId: body.timeSlotsId,
         notes: body.notes ?? null,
+        recurrence: body.recurrence ?? null,   // ← NEU
       })
       .returning();
 
