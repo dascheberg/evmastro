@@ -30,7 +30,7 @@ export const GET: APIRoute = async ({ params }) => {
   });
 };
 
-export const PUT: APIRoute = async ({ params, request }) => {
+export const PUT: APIRoute = async ({ params, request, locals }) => {
   const id = Number(params.id);
 
   if (isNaN(id)) {
@@ -39,6 +39,27 @@ export const PUT: APIRoute = async ({ params, request }) => {
 
   try {
     const body = await request.json();
+
+    // Veranstalter-Berechtigung prüfen (beim Bearbeiten)
+    const allowedIdsPut = locals.allowedOrganizerIds as number[] | null;
+    if (allowedIdsPut !== null) {
+      // Prüfen ob der NEUE Veranstalter erlaubt ist
+      if (!allowedIdsPut.includes(Number(body.organizerId))) {
+        return new Response(
+          JSON.stringify({ error: "Keine Berechtigung für diesen Veranstalter." }),
+          { status: 403 }
+        );
+      }
+      // Prüfen ob das BESTEHENDE Event dem User gehört
+      const [existing] = await db.select({ organizerId: events.organizerId })
+        .from(events).where(eq(events.id, id));
+      if (existing && !allowedIdsPut.includes(existing.organizerId)) {
+        return new Response(
+          JSON.stringify({ error: "Keine Berechtigung für dieses Event." }),
+          { status: 403 }
+        );
+      }
+    }
 
     const updated = await db
       .update(events)
@@ -94,12 +115,27 @@ export const PUT: APIRoute = async ({ params, request }) => {
   }
 };
 
-export const DELETE: APIRoute = async ({ params }) => {
+export const DELETE: APIRoute = async ({ params, locals }) => {
   const id = Number(params.id);
 
   if (isNaN(id)) {
     return new Response(JSON.stringify({ error: "Invalid ID" }), { status: 400 });
   }
+
+
+  // Veranstalter-Berechtigung prüfen (beim Löschen)
+  const allowedIdsDel = locals.allowedOrganizerIds as number[] | null;
+  if (allowedIdsDel !== null) {
+    const [existing] = await db.select({ organizerId: events.organizerId })
+      .from(events).where(eq(events.id, id));
+    if (existing && !allowedIdsDel.includes(existing.organizerId)) {
+      return new Response(
+        JSON.stringify({ error: "Keine Berechtigung für dieses Event." }),
+        { status: 403 }
+      );
+    }
+  }
+
 
   try {
     // ── Daten VOR dem Löschen holen (für die Mail) ────────────────────────────

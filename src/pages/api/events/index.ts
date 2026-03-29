@@ -117,9 +117,18 @@ export const GET: APIRoute = async ({ url }) => {
   }
 };
 
-export const POST: APIRoute = async ({ request }) => {
+export const POST: APIRoute = async ({ request, locals }) => {
   try {
     const body = await request.json();
+
+    // Veranstalter-Berechtigung prüfen
+    const allowedIds = locals.allowedOrganizerIds as number[] | null;
+    if (allowedIds !== null && !allowedIds.includes(Number(body.organizerId))) {
+      return new Response(
+        JSON.stringify({ error: "Keine Berechtigung für diesen Veranstalter." }),
+        { status: 403 }
+      );
+    }
 
     const newEvent = await db
       .insert(events)

@@ -7,6 +7,7 @@ import {
   timestamp,
   jsonb,
   boolean,
+  primaryKey,
 } from "drizzle-orm/pg-core";
 
 // ── Bestehende Tabellen (unverändert) ─────────────────────────────────────────
@@ -51,9 +52,20 @@ export const events = pgTable("events", {
   importId: integer("import_id").references(() => importLog.id),
 });
 
-// ── NEU: Auth-Tabellen für Better Auth ───────────────────────────────────────
+// ── NEU: Veranstalter-Beschränkung pro Benutzer ───────────────────────────────
+//
+// Kein Eintrag für einen User → Super-Admin (voller Zugriff, alle Veranstalter)
+// Ein oder mehrere Einträge → nur diese Veranstalter erlaubt
+//
+export const userOrganizers = pgTable("user_organizers", {
+  userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  organizerId: integer("organizer_id").notNull().references(() => organizers.id, { onDelete: "cascade" }),
+}, (t) => ({
+  pk: primaryKey({ columns: [t.userId, t.organizerId] }),
+}));
 
-// src/db/schema.ts  — nur die geänderte user-Tabelle zeigen
+// ── Auth-Tabellen für Better Auth ─────────────────────────────────────────────
+
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
