@@ -2,9 +2,10 @@ import React, { useState } from "react";
 import { CalendarView } from "./CalendarView"
 import { EventDetails } from "./EventDetails";
 import { Filters } from "./Filters";
+import type { DisplayEvent } from "../../utils/eventDisplay";
 
 export function EventsUserPage() {
-    const [selectedEvent, setSelectedEvent] = useState(null);
+    const [selectedEvent, setSelectedEvent] = useState<DisplayEvent | null>(null);
     const [view, setView] = useState<"month" | "week" | "list">("month");
     const [filters, setFilters] = useState({});
 
@@ -20,21 +21,21 @@ export function EventsUserPage() {
                 {/* Tabs */}
                 <div className="flex gap-2 border-b pb-2">
                     <button
-                        className={`px-3 py-1 rounded ${view === "month" ? "bg-blue-600 text-white" : "bg-gray-200"}`}
+                        className={`px-3 py-1 rounded ${view === "month" ? "bg-green-600 text-white" : "bg-gray-200"}`}
                         onClick={() => setView("month")}
                     >
                         Monat
                     </button>
 
                     <button
-                        className={`px-3 py-1 rounded ${view === "week" ? "bg-blue-600 text-white" : "bg-gray-200"}`}
+                        className={`px-3 py-1 rounded ${view === "week" ? "bg-green-600 text-white" : "bg-gray-200"}`}
                         onClick={() => setView("week")}
                     >
                         Woche
                     </button>
 
                     <button
-                        className={`px-3 py-1 rounded ${view === "list" ? "bg-blue-600 text-white" : "bg-gray-200"}`}
+                        className={`px-3 py-1 rounded ${view === "list" ? "bg-green-600 text-white" : "bg-gray-200"}`}
                         onClick={() => setView("list")}
                     >
                         Liste

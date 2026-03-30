@@ -21,15 +21,18 @@ type EventFormProps = {
     handleCancel: () => void;
 };
 
+type ConflictEvent = {
+    id: number;
+    startDate: string;
+    organizerName: string;
+    locationName: string;
+    typeName: string;
+    timeSlotName: string | null;
+};
+
 type DuplicateInfo = {
-    existingEvent: {
-        id: number;
-        startDate: string;
-        organizerName: string;
-        locationName: string;
-        typeName: string;
-        timeSlotName: string | null;
-    };
+    existingEvent: ConflictEvent | null;
+    locationConflict: ConflictEvent | null;
 };
 
 async function fetchName(api: string, id: number | null): Promise<string> {
@@ -75,7 +78,6 @@ export function EventForm({ event, onSaved, handleCancel }: EventFormProps) {
     const [eventTypeName, setEventTypeName] = useState("");
     const [timeSlotName, setTimeSlotName] = useState("");
 
-    // ← NEU: Felder-behalten Toggle
     const [keepFields, setKeepFields] = useState(false);
 
     useEffect(() => {
@@ -110,7 +112,8 @@ export function EventForm({ event, onSaved, handleCancel }: EventFormProps) {
         fetchName("/api/lookups/timeSlots", form.timeSlotsId).then(setTimeSlotName);
     }, [form.timeSlotsId]);
 
-    // Duplikat-Prüfung mit 500ms Debounce
+    // Duplikat- & Orts-Konflikt-Prüfung mit 500ms Debounce
+    // Wird ausgelöst sobald Datum, Veranstalter, Ort oder Uhrzeit sich ändern
     useEffect(() => {
         if (!form.startDate || !form.organizerId || !form.locationId || !form.eventTypeId) {
             setDuplicate(null);
@@ -128,11 +131,12 @@ export function EventForm({ event, onSaved, handleCancel }: EventFormProps) {
                         organizerId: form.organizerId,
                         locationId: form.locationId,
                         typeId: form.eventTypeId,
+                        timeId: form.timeSlotsId,   // ← NEU: für Orts-Konflikt
                         excludeId: event?.id,
                     }]),
                 });
-                const duplicates = await res.json();
-                setDuplicate(duplicates.length > 0 ? duplicates[0] : null);
+                const results = await res.json();
+                setDuplicate(results.length > 0 ? results[0] : null);
             } catch {
                 setDuplicate(null);
             } finally {
@@ -140,14 +144,13 @@ export function EventForm({ event, onSaved, handleCancel }: EventFormProps) {
             }
         }, 500);
         return () => { if (dupTimerRef.current) clearTimeout(dupTimerRef.current); };
-    }, [form.startDate, form.organizerId, form.locationId, form.eventTypeId]);
+    }, [form.startDate, form.organizerId, form.locationId, form.eventTypeId, form.timeSlotsId]); // ← timeSlotsId ergänzt
 
     function update(field: string, value: any) {
         setForm((f) => ({ ...f, [field]: value }));
     }
 
     function updateStartDate(value: string) {
-        // endDate wird immer still auf startDate gesetzt (Feld ist versteckt)
         setForm(f => ({ ...f, startDate: value, endDate: value }));
     }
 
@@ -160,12 +163,16 @@ export function EventForm({ event, onSaved, handleCancel }: EventFormProps) {
         handleCancel();
     }
 
+    // Nur echte Duplikate blockieren den Speichern-Button — Orts-Konflikte sind nur eine Warnung
+    const hasDuplicate = !!duplicate?.existingEvent;
+    const hasLocationConflict = !!duplicate?.locationConflict;
+
     async function save(ignoreDuplicate = false) {
         if (!form.startDate) { setErrorMessage("Bitte ein Beginndatum eingeben."); return; }
         if (!form.organizerId) { setErrorMessage("Bitte einen Veranstalter auswählen."); return; }
         if (!form.locationId) { setErrorMessage("Bitte einen Veranstaltungsort auswählen."); return; }
         if (!form.eventTypeId) { setErrorMessage("Bitte eine Veranstaltungsart auswählen."); return; }
-        if (duplicate && !ignoreDuplicate) {
+        if (hasDuplicate && !ignoreDuplicate) {
             setErrorMessage("Bitte bestätige dass du das Duplikat trotzdem speichern möchtest.");
             return;
         }
@@ -188,11 +195,9 @@ export function EventForm({ event, onSaved, handleCancel }: EventFormProps) {
 
             if (!event) {
                 if (keepFields) {
-                    // ← Nur Datum und Wiederholung zurücksetzen, Rest behalten
                     setForm(f => ({ ...f, startDate: "", endDate: "", recurrence: null }));
-                    setFormKey(k => k + 1);  // RecurrenceForm zurücksetzen
+                    setFormKey(k => k + 1);
                 } else {
-                    // Alles leeren wie bisher
                     setForm(EMPTY_FORM);
                     setFormKey(k => k + 1);
                 }
@@ -214,8 +219,6 @@ export function EventForm({ event, onSaved, handleCancel }: EventFormProps) {
                 <h2 className="text-xl font-bold">
                     {event ? "Veranstaltung bearbeiten" : "Neue Veranstaltung eingeben"}
                 </h2>
-
-                {/* ← NEU: Felder-behalten Toggle — nur bei Neuanlage sinnvoll */}
                 {!event && (
                     <label className="flex items-center gap-2 cursor-pointer select-none">
                         <input
@@ -241,22 +244,24 @@ export function EventForm({ event, onSaved, handleCancel }: EventFormProps) {
             {dupChecking && (
                 <div className="text-xs text-gray-500 italic">Prüfe auf Duplikate…</div>
             )}
-            {duplicate && !dupChecking && (
+
+            {/* ── Echtes Duplikat (gelb) — blockiert Speichern ── */}
+            {hasDuplicate && !dupChecking && (
                 <div className="bg-yellow-50 border border-yellow-300 rounded-lg p-3 space-y-2">
                     <p className="text-sm font-semibold text-yellow-800">⚠️ Mögliches Duplikat gefunden!</p>
                     <p className="text-sm text-yellow-700">Es existiert bereits ein ähnliches Event:</p>
                     <div className="text-sm text-yellow-800 bg-yellow-100 rounded p-2 space-y-0.5">
                         <div className="font-medium">
-                            {new Date(duplicate.existingEvent.startDate).toLocaleDateString("de-DE")}
-                            {duplicate.existingEvent.timeSlotName && ` · ${duplicate.existingEvent.timeSlotName} Uhr`}
+                            {new Date(duplicate!.existingEvent!.startDate).toLocaleDateString("de-DE")}
+                            {duplicate!.existingEvent!.timeSlotName && ` · ${duplicate!.existingEvent!.timeSlotName} Uhr`}
                         </div>
-                        <div>{duplicate.existingEvent.typeName}</div>
+                        <div>{duplicate!.existingEvent!.typeName}</div>
                         <div className="text-xs text-yellow-600">
-                            {duplicate.existingEvent.organizerName} · {duplicate.existingEvent.locationName}
+                            {duplicate!.existingEvent!.organizerName} · {duplicate!.existingEvent!.locationName}
                         </div>
-                        <a href={`/events/${duplicate.existingEvent.id}`} target="_blank"
+                        <a href={`/events/${duplicate!.existingEvent!.id}`} target="_blank"
                             className="text-xs text-yellow-700 underline">
-                            → Event #{duplicate.existingEvent.id} ansehen
+                            → Event #{duplicate!.existingEvent!.id} ansehen
                         </a>
                     </div>
                     <div className="flex gap-2 pt-1">
@@ -275,8 +280,36 @@ export function EventForm({ event, onSaved, handleCancel }: EventFormProps) {
                 </div>
             )}
 
+            {/* ── Orts-Konflikt (orange) — nur Warnung, Speichern bleibt möglich ── */}
+            {hasLocationConflict && !dupChecking && (
+                <div className="bg-orange-50 border border-orange-300 rounded-lg p-3 space-y-2">
+                    <p className="text-sm font-semibold text-orange-800">
+                        🏢 Orts-Konflikt: Veranstaltungsort bereits belegt!
+                    </p>
+                    <p className="text-sm text-orange-700">
+                        Ein anderer Veranstalter nutzt diesen Ort zur gleichen Zeit:
+                    </p>
+                    <div className="text-sm text-orange-800 bg-orange-100 rounded p-2 space-y-0.5">
+                        <div className="font-medium">
+                            {new Date(duplicate!.locationConflict!.startDate).toLocaleDateString("de-DE")}
+                            {duplicate!.locationConflict!.timeSlotName && ` · ${duplicate!.locationConflict!.timeSlotName} Uhr`}
+                        </div>
+                        <div>{duplicate!.locationConflict!.typeName}</div>
+                        <div className="text-xs text-orange-600">
+                            {duplicate!.locationConflict!.organizerName} · {duplicate!.locationConflict!.locationName}
+                        </div>
+                        <a href={`/events/${duplicate!.locationConflict!.id}`} target="_blank"
+                            className="text-xs text-orange-700 underline">
+                            → Event #{duplicate!.locationConflict!.id} ansehen
+                        </a>
+                    </div>
+                    <p className="text-xs text-orange-600 italic">
+                        Du kannst trotzdem speichern — dies ist nur ein Hinweis.
+                    </p>
+                </div>
+            )}
+
             <div className="space-y-4">
-                {/* Beginndatum + Uhrzeit — endDate ist versteckt, wird intern = startDate gesetzt */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label className="label">
@@ -328,7 +361,7 @@ export function EventForm({ event, onSaved, handleCancel }: EventFormProps) {
             </div>
 
             <div className="flex gap-2 justify-center pt-4">
-                {!duplicate && (
+                {!hasDuplicate && (
                     <button
                         className="btn bg-green-800 text-white font-bold text-base rounded-lg w-48 h-12"
                         onClick={() => save(false)} disabled={isSaving}>

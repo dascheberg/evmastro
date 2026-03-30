@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import type { DisplayEvent } from "../../utils/eventDisplay";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { ClockIcon, MapPinIcon } from "@heroicons/react/24/solid";
+import { ClockIcon, MapPinIcon, DocumentArrowUpIcon, DocumentIcon, PrinterIcon, CalendarDaysIcon } from "@heroicons/react/24/solid";
 
 export function ListView({ filters, onSelectEvent }: {
     filters: any;
@@ -120,36 +120,36 @@ export function ListView({ filters, onSelectEvent }: {
             <div className="flex items-center justify-between flex-wrap gap-2">
                 <div className="flex gap-2 flex-wrap">
                     <button
-                        className="btn btn-sm btn-outline gap-1"
+                        className="btn btn-sm btn-outline text-black gap-2"
                         onClick={() => exportCSV(events)}
                         disabled={events.length === 0}
                         title="Als CSV-Datei herunterladen"
                     >
-                        📄 CSV
+                        <DocumentArrowUpIcon className="h-6 w-6 text-black" /> CSV
                     </button>
                     <button
-                        className="btn btn-sm btn-outline gap-1"
+                        className="btn btn-sm btn-outline gap-2"
                         onClick={() => exportPDF(events)}
                         disabled={events.length === 0}
                         title="Als PDF herunterladen"
                     >
-                        📑 PDF
+                        <DocumentIcon className="h-6 w-6 text-black" />  PDF
                     </button>
                     <button
-                        className="btn btn-sm btn-outline gap-1"
+                        className="btn btn-sm btn-outline text-black gap-2"
                         onClick={openPrint}
                         disabled={events.length === 0}
                         title="Druckansicht öffnen"
                     >
-                        🖨️ Drucken
+                        <PrinterIcon className="h-6 w-6 text-black" />  Drucken
                     </button>
                     <button
-                        className="btn btn-sm btn-outline gap-1"
+                        className="btn btn-sm btn-outline text-black gap-2"
                         onClick={exportICal}
                         disabled={events.length === 0}
                         title="In Kalender-App importieren (.ics)"
                     >
-                        📅 Kalender (.ics)
+                        <CalendarDaysIcon className="h-6 w-6 text-black" />  Kalender (.ics)
                     </button>
                 </div>
 

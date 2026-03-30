@@ -174,7 +174,7 @@ export function Filters({ mode, onChange }: Props) {
 
             {/* Reset */}
             <button
-                className="btn btn-base bg-red-600 text-white self-end rounded-lg text-base w-48 h-8"
+                className="btn btn-base bg-green-300 text-black self-end rounded-lg text-base w-48 h-8"
                 onClick={() =>
                     setFilters({
                         organizerId: undefined,
@@ -186,7 +186,7 @@ export function Filters({ mode, onChange }: Props) {
                     })
                 }
             >
-                Reset
+                Filter zurücksetzen
             </button>
         </div>
     );

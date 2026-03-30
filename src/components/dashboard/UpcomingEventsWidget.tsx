@@ -33,7 +33,7 @@ export default function UpcomingEventsWidget() {
                 {(["today", "week", "month"] as const).map((tab) => (
                     <button
                         key={tab}
-                        className={`px-3 py-1 rounded ${activeTab === tab ? "bg-blue-600 text-white" : "bg-gray-200"}`}
+                        className={`px-3 py-1 rounded ${activeTab === tab ? "bg-green-600 text-white" : "bg-gray-200"}`}
                         onClick={() => setActiveTab(tab)}
                     >
                         {tab === "today" ? "Heute" : tab === "week" ? "7 Tage" : "Monat"}

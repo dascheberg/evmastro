@@ -306,7 +306,7 @@ export function EventsTable({ reload, onEdit, onDelete }: EventsTableProps) {
 
           <div className="flex items-end">
             <button
-              className="border rounded px-3 py-1 bg-teal-600 rounded-lg text-white w-full"
+              className="border rounded px-3 py-1 bg-green-300 rounded-lg text-black w-full"
               onClick={() => {
                 setDateFilters({ startDateFrom: "", startDateTo: "" });
                 setSearchInput("");
