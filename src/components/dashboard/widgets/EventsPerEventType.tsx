@@ -26,7 +26,7 @@ export function EventsPerEventType() {
   return (
     <DashboardCard title={`Die Top ${limit} Veranstaltungsarten`}>
       <select
-        className="select select-bordered w-24"
+        className="select select-bordered w-24 mt-4"
         value={limit}
         onChange={(e) => setLimit(e.target.value)}
       >

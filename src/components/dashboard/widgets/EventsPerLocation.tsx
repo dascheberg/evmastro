@@ -30,7 +30,7 @@ export function EventsPerLocation() {
   return (
     <DashboardCard title={msgText(Number(limit))}>
       <select
-        className="select select-bordered w-24"
+        className="select select-bordered w-24 mt-4"
         value={limit}
         onChange={(e) => setLimit(e.target.value)}
       >
