@@ -41,6 +41,13 @@ function generateUID(id: number, dateStr: string): string {
   return `event-${id}-${dateStr.replace(/-/g, "")}@evmastro`;
 }
 
+function toIsoLocal(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
 // ── API Route ─────────────────────────────────────────────────────────────────
 
 export const GET: APIRoute = async ({ url }) => {
@@ -49,6 +56,8 @@ export const GET: APIRoute = async ({ url }) => {
   const typeId = Number(url.searchParams.get("typeId"));
   const month = Number(url.searchParams.get("month"));
   const year = Number(url.searchParams.get("year"));
+  const from = url.searchParams.get("from")?.trim() ?? "";
+  const to = url.searchParams.get("to")?.trim() ?? "";
   const search = url.searchParams.get("search")?.trim() ?? "";
 
   const conditions: any[] = [];
@@ -57,10 +66,14 @@ export const GET: APIRoute = async ({ url }) => {
   if (locationId) conditions.push(eq(events.locationId, locationId));
   if (typeId) conditions.push(eq(events.typeId, typeId));
 
-  if (month && year) {
+  // Neu: from/to hat Vorrang
+  if (from && to) {
+    conditions.push(gte(events.startDate, from));
+    conditions.push(lte(events.startDate, to));
+  } else if (month && year) {
     const startStr = `${year}-${String(month).padStart(2, "0")}-01`;
     const endDate = new Date(year, month, 0);
-    const endStr = endDate.toISOString().split("T")[0];
+    const endStr = toIsoLocal(endDate);
     conditions.push(gte(events.startDate, startStr));
     conditions.push(lte(events.startDate, endStr));
   }

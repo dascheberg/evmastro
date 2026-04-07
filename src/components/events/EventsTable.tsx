@@ -141,13 +141,28 @@ export function EventsTable({ reload, onEdit, onDelete }: EventsTableProps) {
       .catch((err) => console.error("Events fetch error", err));
   }, [pagination, sorting, columnFilters, dateFilters, debouncedSearch, reload]);
 
+  const todayStr = new Date().toISOString().split("T")[0]; // NEU: Format YYYY-MM-DD
+
   const columns = useMemo<ColumnDef<EventRow>[]>(
     () => [
       {
         accessorKey: "startDate",
         header: "Start",
         enableSorting: true,
-        cell: (info) => new Date(info.getValue() as string).toLocaleDateString("de-DE"),
+        cell: (info) => {
+          const val = info.getValue() as string;
+          const isToday = val === todayStr; // NEU
+          return (
+            <span className={isToday ? "font-bold text-green-700" : ""}>
+              {isToday && (
+                <span className="inline-block bg-green-600 text-white text-xs rounded px-1 mr-1">
+                  Heute
+                </span>
+              )}
+              {new Date(val).toLocaleDateString("de-DE")}
+            </span>
+          );
+        },
       },
       {
         accessorKey: "endDate",
@@ -184,7 +199,7 @@ export function EventsTable({ reload, onEdit, onDelete }: EventsTableProps) {
         ),
       },
     ],
-    [onEdit]
+    [onEdit, todayStr] // todayStr ergänzt
   );
 
   const table = useReactTable({
@@ -358,15 +373,24 @@ export function EventsTable({ reload, onEdit, onDelete }: EventsTableProps) {
                 </td>
               </tr>
             ) : (
-              table.getRowModel().rows.map((row) => (
-                <tr key={row.id} className="border-t odd:bg-green-200 hover:bg-green-400 cursor-pointer">
-                  {row.getVisibleCells().map((cell) => (
-                    <td key={cell.id} className="px-3 py-2">
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </td>
-                  ))}
-                </tr>
-              ))
+              table.getRowModel().rows.map((row) => {
+                const isToday = row.original.startDate === todayStr; // NEU
+                return (
+                  <tr
+                    key={row.id}
+                    className={`border-t cursor-pointer ${isToday
+                      ? "bg-green-200 border-l-4 border-l-green-600 hover:bg-green-300 font-semibold"
+                      : "odd:bg-green-50 hover:bg-green-400"
+                      }`}
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <td key={cell.id} className="px-3 py-2">
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </td>
+                    ))}
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>

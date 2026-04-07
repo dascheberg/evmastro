@@ -1,11 +1,56 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import type { DisplayEvent } from "../../utils/eventDisplay";
+import type { EventFilters } from "./filterTypes";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { ClockIcon, MapPinIcon, DocumentArrowUpIcon, DocumentIcon, PrinterIcon, CalendarDaysIcon } from "@heroicons/react/24/solid";
+import {
+    ClockIcon,
+    MapPinIcon,
+    DocumentArrowUpIcon,
+    DocumentIcon,
+    PrinterIcon,
+    CalendarDaysIcon,
+} from "@heroicons/react/24/solid";
 
-export function ListView({ filters, onSelectEvent }: {
-    filters: any;
+function toIsoLocal(d: Date) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+}
+
+function getRangeFromFilters(filters: EventFilters): { from: string; to: string } {
+    const year = filters.year;
+    const month = filters.month;
+
+    if (filters.periodPreset === "custom" && filters.from && filters.to) {
+        return { from: filters.from, to: filters.to };
+    }
+    if (filters.periodPreset === "year") {
+        return { from: `${year}-01-01`, to: `${year}-12-31` };
+    }
+    if (filters.periodPreset === "half") {
+        return filters.half === 1
+            ? { from: `${year}-01-01`, to: `${year}-06-30` }
+            : { from: `${year}-07-01`, to: `${year}-12-31` };
+    }
+    if (filters.periodPreset === "quarter") {
+        if (filters.quarter === 1) return { from: `${year}-01-01`, to: `${year}-03-31` };
+        if (filters.quarter === 2) return { from: `${year}-04-01`, to: `${year}-06-30` };
+        if (filters.quarter === 3) return { from: `${year}-07-01`, to: `${year}-09-30` };
+        return { from: `${year}-10-01`, to: `${year}-12-31` };
+    }
+
+    const start = new Date(year, month - 1, 1);
+    const end = new Date(year, month, 0);
+    return { from: toIsoLocal(start), to: toIsoLocal(end) };
+}
+
+export function ListView({
+    filters,
+    onSelectEvent,
+}: {
+    filters: EventFilters & { search?: string };
     onSelectEvent: (ev: DisplayEvent) => void;
 }) {
     const [events, setEvents] = useState<DisplayEvent[]>([]);
@@ -17,48 +62,47 @@ export function ListView({ filters, onSelectEvent }: {
         return () => clearTimeout(timer);
     }, [filters.search]);
 
-    function buildParams(): URLSearchParams {
-        return new URLSearchParams({
-            organizerId: filters.organizerId ? String(filters.organizerId) : "",
-            locationId: filters.locationId ? String(filters.locationId) : "",
-            typeId: filters.typeId ? String(filters.typeId) : "",
-            month: filters.month ? String(filters.month) : "",
-            year: filters.year ? String(filters.year) : "",
-            search: debouncedSearch,
-        });
-    }
+    const params = useMemo(() => {
+        const { from, to } = getRangeFromFilters(filters);
+        const q = new URLSearchParams({ from, to });
+
+        // Optionaler Fallback für ältere Endpunkte
+        const fromDate = new Date(from);
+        q.set("month", String(fromDate.getMonth() + 1));
+        q.set("year", String(fromDate.getFullYear()));
+
+        if (filters.organizerId) q.set("organizerId", String(filters.organizerId));
+        if (filters.locationId) q.set("locationId", String(filters.locationId));
+        if (filters.typeId) q.set("typeId", String(filters.typeId));
+        if (debouncedSearch) q.set("search", debouncedSearch);
+
+        return q;
+    }, [filters, debouncedSearch]);
+
+    const queryString = useMemo(() => params.toString(), [params]);
 
     useEffect(() => {
         setLoading(true);
-        fetch(`/api/events-list?${buildParams()}`)
+        fetch(`/api/events-by-range?${queryString}`)
             .then((res) => res.json())
             .then((data) => setEvents(data))
             .finally(() => setLoading(false));
-    }, [
-        filters.organizerId,
-        filters.locationId,
-        filters.typeId,
-        filters.month,
-        filters.year,
-        debouncedSearch,
-    ]);
-
-    // ── Gruppierung nach Monat ────────────────────────────────────────────────
+    }, [queryString]);
 
     const grouped = events.reduce((acc, ev) => {
-        const [day, month, year] = ev.dateLabel.split(".");
+        const [, month, year] = ev.dateLabel.split(".");
         const key = `${year}-${month.padStart(2, "0")}`;
-        const label = new Date(Number(year), Number(month) - 1, 1)
-            .toLocaleDateString("de-DE", { month: "long", year: "numeric" });
+        const label = new Date(Number(year), Number(month) - 1, 1).toLocaleDateString("de-DE", {
+            month: "long",
+            year: "numeric",
+        });
         if (!acc[key]) acc[key] = { label, rows: [] };
         acc[key].rows.push(ev);
         return acc;
     }, {} as Record<string, { label: string; rows: DisplayEvent[] }>);
 
-    // ── Exports ───────────────────────────────────────────────────────────────
-
     function exportICal() {
-        window.location.href = `/api/events-ical?${buildParams()}`;
+        window.location.href = `/api/events-ical?${queryString}`;
     }
 
     function exportCSV(data: DisplayEvent[]) {
@@ -82,7 +126,7 @@ export function ListView({ filters, onSelectEvent }: {
         URL.revokeObjectURL(url);
     }
 
-    function exportPDF(data: DisplayEvent[]) {
+    function exportPDF() {
         const doc = new jsPDF();
         doc.setFontSize(14);
         doc.text("Veranstaltungsliste", 14, 15);
@@ -97,7 +141,13 @@ export function ListView({ filters, onSelectEvent }: {
             autoTable(doc, {
                 startY: currentY,
                 head: [["Datum", "Uhrzeit", "Veranstalter", "Ort", "Typ"]],
-                body: rows.map((ev) => [ev.dateLabel, ev.timeLabel, ev.organizerLabel, ev.locationLabel, ev.typeLabel]),
+                body: rows.map((ev) => [
+                    ev.dateLabel,
+                    ev.timeLabel,
+                    ev.organizerLabel,
+                    ev.locationLabel,
+                    ev.typeLabel,
+                ]),
                 styles: { fontSize: 9 },
                 headStyles: { fillColor: [22, 101, 52] },
                 margin: { top: 10 },
@@ -108,10 +158,8 @@ export function ListView({ filters, onSelectEvent }: {
     }
 
     function openPrint() {
-        window.open(`/print?${buildParams()}`, "_blank");
+        window.open(`/print?${queryString}`, "_blank");
     }
-
-    // ── Render ────────────────────────────────────────────────────────────────
 
     return (
         <div className="space-y-4">
@@ -129,7 +177,7 @@ export function ListView({ filters, onSelectEvent }: {
                     </button>
                     <button
                         className="btn btn-sm btn-outline gap-2"
-                        onClick={() => exportPDF(events)}
+                        onClick={exportPDF}
                         disabled={events.length === 0}
                         title="Als PDF herunterladen"
                     >

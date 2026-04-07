@@ -13,6 +13,9 @@ export default function CalendarWidget({ onSelectDate }: { onSelectDate: (date: 
     const year = current.getFullYear();
     const month = current.getMonth();
 
+    // NEU: heutiges Datum als YYYY-MM-DD
+    const todayStr = new Date().toISOString().split("T")[0];
+
     useEffect(() => {
         fetch(`/api/events-calendar?year=${year}&month=${month + 1}`)
             .then((res) => res.json())
@@ -34,15 +37,16 @@ export default function CalendarWidget({ onSelectDate }: { onSelectDate: (date: 
 
     // Tage rendern
     for (let day = 1; day <= daysInMonth; day++) {
-        const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(
-            day
-        ).padStart(2, "0")}`;
+        const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 
         const info = eventsByDate.find((d) => d.date === dateStr);
         const count = info?.count ?? 0;
+        const isToday = dateStr === todayStr; // NEU
 
-        const bg =
-            count === 0
+        // NEU: Heute hat Vorrang vor der normalen Farblogik
+        const bg = isToday
+            ? "bg-green-500 text-white ring-2 ring-green-700"
+            : count === 0
                 ? "bg-gray-100"
                 : count < 3
                     ? "bg-blue-200"
@@ -54,14 +58,23 @@ export default function CalendarWidget({ onSelectDate }: { onSelectDate: (date: 
             <div
                 key={day}
                 className={`p-2 rounded text-center cursor-pointer ${bg}`}
-                onClick={() => onSelectDate(dateStr)}   // ← HIER
+                onClick={() => onSelectDate(dateStr)}
             >
-                <div className="font-semibold">{day}</div>
+                <div className="font-semibold flex items-center justify-center gap-1">
+                    {day}
+                    {isToday && ( // NEU
+                        <span className="inline-block w-1.5 h-1.5 rounded-full bg-white" />
+                    )}
+                </div>
                 {count > 0 && <div className="text-xs">{count} Einträge</div>}
             </div>
         );
-
     }
+
+    const goToday = () => {
+        const now = new Date();
+        setCurrent(new Date(now.getFullYear(), now.getMonth(), 1));
+    };
 
     return (
         <div className="p-4 bg-white rounded shadow space-y-4">
@@ -75,12 +88,21 @@ export default function CalendarWidget({ onSelectDate }: { onSelectDate: (date: 
                     <ArrowLeftIcon className="h-6 w-6 font-bold" />
                 </button>
 
-                <h2 className="text-lg font-bold">
-                    {current.toLocaleString("de-DE", {
-                        month: "long",
-                        year: "numeric",
-                    })}
-                </h2>
+                <div className="flex items-center gap-2">
+                    <h2 className="text-lg font-bold">
+                        {current.toLocaleString("de-DE", {
+                            month: "long",
+                            year: "numeric",
+                        })}
+                    </h2>
+                    <button
+                        className="btn btn-xs bg-green-600 text-white border-green-600 hover:bg-green-700"
+                        onClick={goToday}
+                        type="button"
+                    >
+                        Heute
+                    </button>
+                </div>
 
                 <button
                     className="btn btn-sm"

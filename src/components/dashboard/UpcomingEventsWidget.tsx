@@ -10,6 +10,8 @@ export default function UpcomingEventsWidget() {
 
     const [activeTab, setActiveTab] = useState<"today" | "week" | "month">("today");
 
+    const todayStr = new Date().toLocaleDateString("de-DE"); // NEU
+
     useEffect(() => {
         fetch("/api/events-upcoming")
             .then((res) => res.json())
@@ -47,27 +49,37 @@ export default function UpcomingEventsWidget() {
                     <p className="text-sm text-gray-500">Keine Veranstaltungen</p>
                 )}
 
-                {items.map((ev) => (
-                    <a
-                        key={ev.id}
-                        href={`/events/${ev.id}`}
-                        className="block p-2 border rounded bg-gray-50 text-sm hover:bg-green-50 hover:border-green-300 transition-colors"
-                    >
-                        <div className="font-semibold">
-                            {ev.dateLabel}, {ev.timeLabel}
-                        </div>
-                        <div className="text-gray-600">{ev.typeLabel}</div>
-                        <div className="text-gray-500 text-xs">
-                            {ev.locationLabel} · {ev.organizerLabel}
-                        </div>
-                        {/* Notes anzeigen falls vorhanden */}
-                        {ev.raw?.notes && (
-                            <div className="text-gray-400 text-xs mt-1 italic truncate">
-                                {ev.raw.notes}
+                {items.map((ev) => {
+                    const isToday = ev.dateLabel === todayStr; // NEU
+                    return (
+                        <a
+                            key={ev.id}
+                            href={`/events/${ev.id}`}
+                            className={`block p-2 border rounded text-sm transition-colors ${isToday
+                                ? "bg-green-50 border-green-500 ring-1 ring-green-400 hover:bg-green-100"
+                                : "bg-gray-50 hover:bg-green-50 hover:border-green-300"
+                                }`}
+                        >
+                            <div className="font-semibold flex items-center gap-2">
+                                {isToday && (
+                                    <span className="bg-green-600 text-white text-xs rounded px-1">
+                                        Heute
+                                    </span>
+                                )}
+                                {ev.dateLabel}, {ev.timeLabel}
                             </div>
-                        )}
-                    </a>
-                ))}
+                            <div className="text-gray-600">{ev.typeLabel}</div>
+                            <div className="text-gray-500 text-xs">
+                                {ev.locationLabel} · {ev.organizerLabel}
+                            </div>
+                            {ev.raw?.notes && (
+                                <div className="text-gray-400 text-xs mt-1 italic truncate">
+                                    {ev.raw.notes}
+                                </div>
+                            )}
+                        </a>
+                    );
+                })}
             </div>
         </div>
     );

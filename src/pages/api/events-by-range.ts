@@ -1,49 +1,28 @@
 import type { APIRoute } from "astro";
 import { db } from "../../db";
-import {
-    events,
-    locations,
-    organizers,
-    eventTypes,
-    timeSlots,
-} from "../../db/schema";
-import { and, eq, gte, lte } from "drizzle-orm";
+import { events, locations, organizers, eventTypes, timeSlots } from "../../db/schema";
+import { and, eq, gte, lte, like } from "drizzle-orm";
 import { toDisplayEvent } from "../../utils/eventDisplay";
 
 export const prerender = false;
 
-function formatLocalDate(date: Date) {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
-    return `${year}-${month}-${day}`;
-}
-
-function addDays(date: Date, days: number) {
-    const result = new Date(date);
-    result.setDate(result.getDate() + days);
-    return result;
-}
-
 export const GET: APIRoute = async ({ url }) => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const startStr = formatLocalDate(today);
-    const endStr = formatLocalDate(addDays(today, 7));
-
-    const conditions: any[] = [
-        gte(events.startDate, startStr),
-        lte(events.startDate, endStr),
-    ];
+    const from = url.searchParams.get("from");
+    const to = url.searchParams.get("to");
+    if (!from || !to) {
+        return new Response(JSON.stringify({ error: "from/to fehlen" }), { status: 400 });
+    }
 
     const organizerId = url.searchParams.get("organizerId");
     const locationId = url.searchParams.get("locationId");
     const typeId = url.searchParams.get("typeId");
+    const search = url.searchParams.get("search")?.trim();
 
+    const conditions: any[] = [gte(events.startDate, from), lte(events.startDate, to)];
     if (organizerId) conditions.push(eq(events.organizerId, Number(organizerId)));
     if (locationId) conditions.push(eq(events.locationId, Number(locationId)));
     if (typeId) conditions.push(eq(events.typeId, Number(typeId)));
+    if (search) conditions.push(like(events.notes, `%${search}%`));
 
     const rows = await db
         .select({
@@ -65,5 +44,7 @@ export const GET: APIRoute = async ({ url }) => {
         .where(and(...conditions))
         .orderBy(events.startDate);
 
-    return new Response(JSON.stringify(rows.map(toDisplayEvent)));
+    return new Response(JSON.stringify(rows.map(toDisplayEvent)), {
+        headers: { "Content-Type": "application/json" },
+    });
 };

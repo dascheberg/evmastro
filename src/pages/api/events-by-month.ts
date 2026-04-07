@@ -12,17 +12,25 @@ import { toDisplayEvent } from "../../utils/eventDisplay";
 
 export const prerender = false;
 
+function formatLocalDate(date: Date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+}
+
+function addDays(date: Date, days: number) {
+    const result = new Date(date);
+    result.setDate(result.getDate() + days);
+    return result;
+}
+
 export const GET: APIRoute = async ({ url }) => {
-    const year = Number(url.searchParams.get("year"));
-    const month = Number(url.searchParams.get("month"));
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
-    if (!year || !month || isNaN(year) || isNaN(month)) {
-        return new Response(JSON.stringify([]));
-    }
-
-    const startStr = `${year}-${String(month).padStart(2, "0")}-01`;
-    const endDate = new Date(year, month, 0);
-    const endStr = endDate.toISOString().split("T")[0];
+    const startStr = formatLocalDate(today);
+    const endStr = formatLocalDate(addDays(today, 30));
 
     const conditions: any[] = [
         gte(events.startDate, startStr),
@@ -46,8 +54,8 @@ export const GET: APIRoute = async ({ url }) => {
             eventTypeName: eventTypes.name,
             organizerName: organizers.name,
             timeSlotStart: timeSlots.name,
-            notes: events.notes,        // ← NEU
-            recurrence: events.recurrence,   // ← NEU
+            notes: events.notes,
+            recurrence: events.recurrence,
         })
         .from(events)
         .leftJoin(locations, eq(events.locationId, locations.id))

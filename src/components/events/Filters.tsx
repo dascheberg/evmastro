@@ -1,190 +1,191 @@
 import React, { useEffect, useState } from "react";
+import type { EventFilters } from "./filterTypes";
 
-interface Props {
+type Props = {
     mode: "month" | "week" | "list";
-    onChange: (filters: Filters) => void;
-}
-
-export type Filters = {
-    organizerId?: number;
-    locationId?: number;
-    typeId?: number;
-    month?: number;
-    year: number;
-    search?: string;
+    onChange: (filters: EventFilters) => void;
 };
 
+type LookupItem = { id: number; name: string };
+
 export function Filters({ mode, onChange }: Props) {
-    const [organizers, setOrganizers] = useState([]);
-    const [locations, setLocations] = useState([]);
-    const [types, setTypes] = useState([]);
+    const [organizers, setOrganizers] = useState<LookupItem[]>([]);
+    const [locations, setLocations] = useState<LookupItem[]>([]);
+    const [types, setTypes] = useState<LookupItem[]>([]);
 
     const now = new Date();
 
-    const [filters, setFilters] = useState<Filters>({
+    const defaultFilters: EventFilters = {
+        year: now.getFullYear(),
+        month: now.getMonth() + 1,
+        quarter: 1,
+        half: 1,
+        periodPreset: "month",
+        from: "",
+        to: "",
         organizerId: undefined,
         locationId: undefined,
         typeId: undefined,
-        month: undefined,
-        year: now.getFullYear(),
-        search: "",
-    });
+    };
+
+    const [filters, setFilters] = useState<EventFilters>(defaultFilters);
+
+    const setField = <K extends keyof EventFilters>(key: K, value: EventFilters[K]) => {
+        setFilters((prev) => {
+            const next = { ...prev, [key]: value };
+            onChange(next);
+            return next;
+        });
+    };
+
+    const resetFilters = () => {
+        setFilters(defaultFilters);
+        onChange(defaultFilters);
+    };
 
     useEffect(() => {
         fetch("/api/lookups-central")
             .then((r) => r.json())
             .then((d) => {
-                setOrganizers(d.organizers);
-                setLocations(d.locations);
-                setTypes(d.types);
+                setOrganizers(d.organizers ?? []);
+                setLocations(d.locations ?? []);
+                setTypes(d.types ?? []);
             });
     }, []);
 
+    // Wenn nicht Listenansicht, "custom" automatisch auf "month" zurücksetzen
     useEffect(() => {
-        onChange(filters);
-    }, [filters]);
-
-    const disabled = mode !== "list";
+        if (mode !== "list" && filters.periodPreset === "custom") {
+            const next = { ...filters, periodPreset: "month" as const };
+            setFilters(next);
+            onChange(next);
+        }
+    }, [mode]); // absichtlich nur mode
 
     return (
-        <div
-            className={`flex flex-wrap gap-4 bg-white p-3 rounded shadow ${disabled ? "opacity-50 pointer-events-none" : ""
-                }`}
-        >
-            {/* Veranstalter */}
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-2">
+            <select
+                className="border rounded px-2 py-1"
+                value={filters.periodPreset}
+                onChange={(e) => setField("periodPreset", e.target.value as EventFilters["periodPreset"])}
+            >
+                <option value="month">Monat</option>
+                <option value="quarter">Quartal</option>
+                <option value="half">Halbjahr</option>
+                <option value="year">Jahr</option>
+                {mode === "list" && <option value="custom">Von/Bis</option>}
+            </select>
+
+            {filters.periodPreset !== "custom" && (
+                <input
+                    type="number"
+                    className="border rounded px-2 py-1"
+                    value={filters.year}
+                    onChange={(e) => setField("year", Number(e.target.value))}
+                />
+            )}
+
+            {filters.periodPreset === "month" && (
+                <select
+                    className="border rounded px-2 py-1"
+                    value={filters.month}
+                    onChange={(e) => setField("month", Number(e.target.value))}
+                >
+                    {Array.from({ length: 12 }).map((_, i) => (
+                        <option key={i + 1} value={i + 1}>
+                            {i + 1}. Monat
+                        </option>
+                    ))}
+                </select>
+            )}
+
+            {filters.periodPreset === "quarter" && (
+                <select
+                    className="border rounded px-2 py-1"
+                    value={filters.quarter}
+                    onChange={(e) => setField("quarter", Number(e.target.value) as 1 | 2 | 3 | 4)}
+                >
+                    <option value={1}>1. Quartal</option>
+                    <option value={2}>2. Quartal</option>
+                    <option value={3}>3. Quartal</option>
+                    <option value={4}>4. Quartal</option>
+                </select>
+            )}
+
+            {filters.periodPreset === "half" && (
+                <select
+                    className="border rounded px-2 py-1"
+                    value={filters.half}
+                    onChange={(e) => setField("half", Number(e.target.value) as 1 | 2)}
+                >
+                    <option value={1}>1. Halbjahr</option>
+                    <option value={2}>2. Halbjahr</option>
+                </select>
+            )}
+
+            {mode === "list" && filters.periodPreset === "custom" && (
+                <>
+                    <input
+                        type="date"
+                        className="border rounded px-2 py-1"
+                        value={filters.from ?? ""}
+                        onChange={(e) => setField("from", e.target.value)}
+                    />
+                    <input
+                        type="date"
+                        className="border rounded px-2 py-1"
+                        value={filters.to ?? ""}
+                        onChange={(e) => setField("to", e.target.value)}
+                    />
+                </>
+            )}
+
             <div className="flex flex-col">
                 <label className="text-base text-gray-700">Veranstalter</label>
                 <select
                     className="select select-sm select-bordered text-base"
                     value={filters.organizerId ?? ""}
-                    onChange={(e) =>
-                        setFilters((f) => ({
-                            ...f,
-                            organizerId: e.target.value ? Number(e.target.value) : undefined,
-                        }))
-                    }
+                    onChange={(e) => setField("organizerId", e.target.value ? Number(e.target.value) : undefined)}
                 >
                     <option value="">Alle</option>
-                    {organizers.map((o: any) => (
-                        <option key={o.id} value={o.id}>
-                            {o.name}
-                        </option>
+                    {organizers.map((o) => (
+                        <option key={o.id} value={o.id}>{o.name}</option>
                     ))}
                 </select>
             </div>
 
-            {/* Ort */}
             <div className="flex flex-col">
                 <label className="text-base text-gray-700">Ort</label>
                 <select
                     className="select select-sm select-bordered text-base"
                     value={filters.locationId ?? ""}
-                    onChange={(e) =>
-                        setFilters((f) => ({
-                            ...f,
-                            locationId: e.target.value ? Number(e.target.value) : undefined,
-                        }))
-                    }
+                    onChange={(e) => setField("locationId", e.target.value ? Number(e.target.value) : undefined)}
                 >
                     <option value="">Alle</option>
-                    {locations.map((l: any) => (
-                        <option key={l.id} value={l.id}>
-                            {l.name}
-                        </option>
+                    {locations.map((l) => (
+                        <option key={l.id} value={l.id}>{l.name}</option>
                     ))}
                 </select>
             </div>
 
-            {/* Typ */}
             <div className="flex flex-col">
                 <label className="text-base text-gray-700">Typ</label>
                 <select
                     className="select select-sm select-bordered text-base"
                     value={filters.typeId ?? ""}
-                    onChange={(e) =>
-                        setFilters((f) => ({
-                            ...f,
-                            typeId: e.target.value ? Number(e.target.value) : undefined,
-                        }))
-                    }
+                    onChange={(e) => setField("typeId", e.target.value ? Number(e.target.value) : undefined)}
                 >
                     <option value="">Alle</option>
-                    {types.map((t: any) => (
-                        <option key={t.id} value={t.id}>
-                            {t.name}
-                        </option>
+                    {types.map((t) => (
+                        <option key={t.id} value={t.id}>{t.name}</option>
                     ))}
                 </select>
             </div>
 
-            {/* Monat */}
-            <div className="flex flex-col">
-                <label className="text-base text-gray-700">Monat</label>
-                <select
-                    className="w-36 h-8"
-                    value={filters.month ?? ""}
-                    onChange={(e) =>
-                        setFilters((f) => ({
-                            ...f,
-                            month: e.target.value ? Number(e.target.value) : undefined,
-                        }))
-                    }
-                >
-                    <option value="" className="text-base">Alle Monate</option>   {/* ← NEU */}
-                    {Array.from({ length: 12 }).map((_, i) => (
-                        <option key={i + 1} value={i + 1}>
-                            {new Date(2024, i, 1).toLocaleDateString("de-DE", { month: "long" })}
-                        </option>
-                    ))}
-                </select>
-            </div>
-
-            {/* Jahr */}
-            <div className="flex flex-col">
-                <label className="text-base text-gray-700">Jahr</label>
-                <select
-                    className="select select-sm select-bordered text-base"
-                    value={filters.year}
-                    onChange={(e) =>
-                        setFilters((f) => ({ ...f, year: Number(e.target.value) }))
-                    }
-                >
-                    {Array.from({ length: 5 }).map((_, i) => {
-                        const y = now.getFullYear() - 2 + i;
-                        return (
-                            <option key={y} value={y}>
-                                {y}
-                            </option>
-                        );
-                    })}
-                </select>
-            </div>
-
-            {/* Suche */}
-            <div className="flex flex-col">
-                <label className="text-base text-gray-700">Suche</label>
-                <input
-                    className="input input-sm input-bordered w-72 h-8"
-                    value={filters.search}
-                    onChange={(e) =>
-                        setFilters((f) => ({ ...f, search: e.target.value }))
-                    }
-                />
-            </div>
-
-            {/* Reset */}
             <button
                 className="btn btn-base bg-green-300 text-black self-end rounded-lg text-base w-48 h-8"
-                onClick={() =>
-                    setFilters({
-                        organizerId: undefined,
-                        locationId: undefined,
-                        typeId: undefined,
-                        month: undefined,
-                        year: now.getFullYear(),
-                        search: "",
-                    })
-                }
+                onClick={resetFilters}
+                type="button"
             >
                 Filter zurücksetzen
             </button>

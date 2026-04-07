@@ -12,15 +12,23 @@ import { toDisplayEvent } from "../../utils/eventDisplay";
 
 export const prerender = false;
 
+function parseDate(dateLabel: string): Date {
+    const [day, month, year] = dateLabel.split(".");
+    return new Date(`${year}-${month}-${day}`);
+}
+
+function addDays(date: Date, days: number): Date {
+    const d = new Date(date);
+    d.setDate(d.getDate() + days);
+    return d;
+}
+
 export const GET: APIRoute = async () => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const nextWeek = new Date(today);
-    nextWeek.setDate(today.getDate() + 7);
-
-    const nextMonth = new Date(today);
-    nextMonth.setMonth(today.getMonth() + 1);
+    const weekEnd = addDays(today, 7);   // heute + 7 Tage (inkl. heute)
+    const monthEnd = addDays(today, 30); // heute + 30 Tage (inkl. heute)
 
     const rows = await db
         .select({
@@ -31,8 +39,8 @@ export const GET: APIRoute = async () => {
             eventTypeName: eventTypes.name,
             organizerName: organizers.name,
             timeSlotStart: timeSlots.name,
-            notes: events.notes,        // ← NEU
-            recurrence: events.recurrence,   // ← NEU
+            notes: events.notes,
+            recurrence: events.recurrence,
         })
         .from(events)
         .leftJoin(locations, eq(events.locationId, locations.id))
@@ -43,12 +51,6 @@ export const GET: APIRoute = async () => {
 
     const display = rows.map(toDisplayEvent);
 
-    // Filterlogik mit korrektem Datum-Parser
-    function parseDate(dateLabel: string): Date {
-        const [day, month, year] = dateLabel.split(".");
-        return new Date(`${year}-${month}-${day}`);
-    }
-
     const todayEvents = display.filter((ev) => {
         const d = parseDate(ev.dateLabel);
         return d.toDateString() === today.toDateString();
@@ -56,12 +58,12 @@ export const GET: APIRoute = async () => {
 
     const weekEvents = display.filter((ev) => {
         const d = parseDate(ev.dateLabel);
-        return d > today && d <= nextWeek;
+        return d >= today && d <= weekEnd; // inkl. heute
     });
 
     const monthEvents = display.filter((ev) => {
         const d = parseDate(ev.dateLabel);
-        return d > nextWeek && d <= nextMonth;
+        return d >= today && d <= monthEnd; // inkl. heute, +30 Tage
     });
 
     return new Response(
