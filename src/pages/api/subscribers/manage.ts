@@ -1,15 +1,13 @@
 // src/pages/api/subscribers/manage.ts
-// Öffentlicher Endpunkt – kein Login, nur Token aus der E-Mail
-
 import type { APIRoute } from "astro";
 import { db } from "../../../db";
 import { subscribers } from "../../../db/schema";
 import { eq } from "drizzle-orm";
+import { notifySubscriberChanged } from "../../../lib/email";
 
 export const prerender = false;
 
 // GET /api/subscribers/manage?token=abc123
-// Liefert die aktuellen Einstellungen des Abonnenten
 export const GET: APIRoute = async ({ url }) => {
   const token = url.searchParams.get("token");
 
@@ -37,7 +35,6 @@ export const GET: APIRoute = async ({ url }) => {
 };
 
 // PUT /api/subscribers/manage
-// Speichert geänderte Einstellungen anhand des Tokens im Body
 export const PUT: APIRoute = async ({ request }) => {
   const body = await request.json();
   const { token, organizerIds, locationIds } = body;
@@ -56,19 +53,18 @@ export const PUT: APIRoute = async ({ request }) => {
     );
   }
 
-  const existing = await db
-    .select({ id: subscribers.id })
-    .from(subscribers)
-    .where(eq(subscribers.unsubscribeToken, token));
+  // ── Ein einziges UPDATE mit .returning() ──────────────────────────────────
+  const [updated] = await db
+    .update(subscribers)
+    .set({ organizerIds: orgIds, locationIds: locIds })
+    .where(eq(subscribers.unsubscribeToken, token))
+    .returning();
 
-  if (existing.length === 0) {
+  if (!updated) {
     return new Response(JSON.stringify({ error: "Ungültiger Token." }), { status: 404 });
   }
 
-  await db
-    .update(subscribers)
-    .set({ organizerIds: orgIds, locationIds: locIds })
-    .where(eq(subscribers.unsubscribeToken, token));
+  notifySubscriberChanged(updated).catch(console.error);
 
   return new Response(JSON.stringify({ success: true }), {
     headers: { "Content-Type": "application/json" },

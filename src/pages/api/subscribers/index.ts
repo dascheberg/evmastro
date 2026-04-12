@@ -6,6 +6,7 @@ import { db } from "../../../db";
 import { subscribers } from "../../../db/schema";
 import { eq } from "drizzle-orm";
 import { randomBytes } from "crypto";
+import { notifySubscriberWelcome } from "../../../lib/email";
 
 export const prerender = false;
 
@@ -55,13 +56,18 @@ export const POST: APIRoute = async ({ request }) => {
   // Token generieren (32 Byte = 64 hex-Zeichen)
   const unsubscribeToken = randomBytes(32).toString("hex");
 
-  await db.insert(subscribers).values({
-    name: name.trim(),
-    email: email.trim().toLowerCase(),
-    unsubscribeToken,
-    organizerIds: orgIds,
-    locationIds: locIds,
-  });
+  const [newSub] = await db
+    .insert(subscribers)
+    .values({
+      name: name.trim(),
+      email: email.trim().toLowerCase(),
+      unsubscribeToken,
+      organizerIds: orgIds,
+      locationIds: locIds,
+    })
+    .returning();  // ← gibt den kompletten neuen Datensatz zurück
+
+  notifySubscriberWelcome(newSub).catch(console.error);
 
   return new Response(JSON.stringify({ success: true }), {
     status: 201,

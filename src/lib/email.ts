@@ -2,7 +2,10 @@
 import { Resend } from "resend";
 import { db } from "../db";
 import { user, subscribers } from "../db/schema";
-import { eq, or, arrayContains } from "drizzle-orm";
+import { eq, inArray, sql } from "drizzle-orm";
+import { organizers, locations } from "../db/schema";
+
+
 
 const resend = new Resend(import.meta.env.RESEND_API_KEY);
 
@@ -172,10 +175,8 @@ export async function notifySubscribers(
     .select()
     .from(subscribers)
     .where(
-      or(
-        arrayContains(subscribers.organizerIds, [event.organizerId]),
-        arrayContains(subscribers.locationIds, [event.locationId])
-      )
+      sql`${event.organizerId} = ANY(${subscribers.organizerIds})
+     OR ${event.locationId} = ANY(${subscribers.locationIds})`
     );
 
   if (allSubs.length === 0) return;
@@ -193,8 +194,9 @@ export async function notifySubscribers(
       ${eventTable(event)}
       <a class="btn" href="${BASE_URL}">Zum Kalender</a>
       <div class="footer">
-        Du erhältst diese E-Mail, weil du Terminbenachrichtigungen abonniert hast.<br/>
-        <a href="${unsubUrl}" style="color:#9ca3af">Benachrichtigungen abbestellen</a>
+        Du erhältst diese E-Mail, weil du Terminbenachrichtigungen abonniert hast. Bitte benutze<br/>
+        zum Ändern oder Abmelden jederzeit den nachstehenden Link, nur über diesen geht es:<br />
+        <a href="${unsubUrl}" style="color:#9ca3af">Benachrichtigungen abbestellen / ändern</a>
       </div>
     `;
 
@@ -211,4 +213,139 @@ export async function notifySubscribers(
     if (r.status === "rejected")
       console.error(`[email] Subscriber ${allSubs[i].email} fehlgeschlagen:`, r.reason);
   });
+}
+
+// ── Hilfsfunktion: IDs → Namen auflösen ──────────────────────────────────────
+
+async function resolveNames(
+  organizerIds: number[],
+  locationIds: number[]
+): Promise<{ organizerNames: string[]; locationNames: string[] }> {
+  const [orgRows, locRows] = await Promise.all([
+    organizerIds.length > 0
+      ? db.select({ name: organizers.name }).from(organizers)
+        .where(inArray(organizers.id, organizerIds))
+      : Promise.resolve([]),
+    locationIds.length > 0
+      ? db.select({ name: locations.name }).from(locations)
+        .where(inArray(locations.id, locationIds))
+      : Promise.resolve([]),
+  ]);
+  return {
+    organizerNames: orgRows.map((r) => r.name),
+    locationNames: locRows.map((r) => r.name),
+  };
+}
+
+// ── Hilfsfunktion: Auswahl-Liste als HTML ─────────────────────────────────────
+
+function selectionList(
+  organizerNames: string[],
+  locationNames: string[]
+): string {
+  const orgList = organizerNames.length > 0
+    ? `<tr><td>Veranstalter</td><td>${organizerNames.join(", ")}</td></tr>`
+    : "";
+  const locList = locationNames.length > 0
+    ? `<tr><td>Orte</td><td>${locationNames.join(", ")}</td></tr>`
+    : "";
+  return `<table>${orgList}${locList}</table>`;
+}
+
+// ── 1. Anmelde-Bestätigung ────────────────────────────────────────────────────
+
+export async function notifySubscriberWelcome(sub: {
+  email: string;
+  name: string;
+  organizerIds: number[];
+  locationIds: number[];
+  unsubscribeToken: string;
+}) {
+  const { organizerNames, locationNames } = await resolveNames(
+    sub.organizerIds,
+    sub.locationIds
+  );
+
+  const manageUrl = `${BASE_URL}/abo-verwalten?token=${sub.unsubscribeToken}`;
+  const unsubUrl = `${BASE_URL}/api/subscribers/unsubscribe?token=${sub.unsubscribeToken}`;
+
+  const { error } = await resend.emails.send({
+    from: FROM,
+    to: sub.email,
+    subject: "✅ Anmeldung bestätigt – Gemeinde Schmalfeld",
+    html: layout("Anmeldung bestätigt", `
+      <p>Hallo ${sub.name},</p>
+      <p>du erhältst ab sofort eine Benachrichtigung, wenn sich bei folgenden
+         Veranstaltungen etwas ändert:</p>
+      ${selectionList(organizerNames, locationNames)}
+      <a class="btn" href="${BASE_URL}">Zum Kalender</a>
+      <div class="footer">
+        <a href="${manageUrl}" style="color:#9ca3af">Einstellungen ändern</a>
+        &nbsp;·&nbsp;
+        <a href="${unsubUrl}" style="color:#9ca3af">Abmelden</a>
+      </div>
+    `),
+  });
+
+  if (error) console.error("[email] Welcome-Mail fehlgeschlagen:", error);
+}
+
+// ── 2. Abmelde-Bestätigung ────────────────────────────────────────────────────
+
+export async function notifySubscriberGoodbye(sub: {
+  email: string;
+  name: string;
+}) {
+  const { error } = await resend.emails.send({
+    from: FROM,
+    to: sub.email,
+    subject: "👋 Abmeldung bestätigt – Gemeinde Schmalfeld",
+    html: layout("Abmeldung bestätigt", `
+      <p>Hallo ${sub.name},</p>
+      <p>du wurdest erfolgreich abgemeldet und erhältst keine
+         Terminbenachrichtigungen mehr von uns.</p>
+      <p>Du kannst dich jederzeit wieder anmelden:</p>
+      <a class="btn" href="${BASE_URL}/abonnieren">Wieder anmelden</a>
+    `),
+  });
+
+  if (error) console.error("[email] Goodbye-Mail fehlgeschlagen:", error);
+}
+
+// ── 3. Einstellungen geändert ─────────────────────────────────────────────────
+
+export async function notifySubscriberChanged(sub: {
+  email: string;
+  name: string;
+  organizerIds: number[];
+  locationIds: number[];
+  unsubscribeToken: string;
+}) {
+  const { organizerNames, locationNames } = await resolveNames(
+    sub.organizerIds,
+    sub.locationIds
+  );
+
+  const manageUrl = `${BASE_URL}/abo-verwalten?token=${sub.unsubscribeToken}`;
+  const unsubUrl = `${BASE_URL}/api/subscribers/unsubscribe?token=${sub.unsubscribeToken}`;
+
+  const { error } = await resend.emails.send({
+    from: FROM,
+    to: sub.email,
+    subject: "✏️ Einstellungen geändert – Gemeinde Schmalfeld",
+    html: layout("Einstellungen aktualisiert", `
+      <p>Hallo ${sub.name},</p>
+      <p>deine Benachrichtigungseinstellungen wurden aktualisiert.
+         Du erhältst ab sofort Meldungen für:</p>
+      ${selectionList(organizerNames, locationNames)}
+      <a class="btn" href="${BASE_URL}">Zum Kalender</a>
+      <div class="footer">
+        <a href="${manageUrl}" style="color:#9ca3af">Einstellungen ändern</a>
+        &nbsp;·&nbsp;
+        <a href="${unsubUrl}" style="color:#9ca3af">Abmelden</a>
+      </div>
+    `),
+  });
+
+  if (error) console.error("[email] Changed-Mail fehlgeschlagen:", error);
 }

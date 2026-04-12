@@ -5,6 +5,7 @@ import type { APIRoute } from "astro";
 import { db } from "../../../db";
 import { subscribers } from "../../../db/schema";
 import { eq } from "drizzle-orm";
+import { notifySubscriberGoodbye } from "../../../lib/email";
 
 export const prerender = false;
 
@@ -25,7 +26,16 @@ export const GET: APIRoute = async ({ url, redirect }) => {
     return redirect("/abmelden?fehler=ungueltig");
   }
 
+  const [toDelete] = await db
+    .select({ name: subscribers.name, email: subscribers.email })
+    .from(subscribers)
+    .where(eq(subscribers.unsubscribeToken, token));
+
   await db.delete(subscribers).where(eq(subscribers.unsubscribeToken, token));
+
+  if (toDelete) {
+    notifySubscriberGoodbye(toDelete).catch(console.error);
+  }
 
   return redirect("/abmelden?erfolg=1");
 };
