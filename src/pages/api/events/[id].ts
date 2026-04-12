@@ -4,6 +4,7 @@ import { events } from "../../../db/schema";
 import { eq } from "drizzle-orm";
 import { notifyEventUpdated, notifyEventDeleted } from "../../../lib/email";
 import { organizers, locations, eventTypes, timeSlots } from "../../../db/schema";
+import { notifySubscribers } from "../../../lib/email";
 
 
 export const prerender = false;
@@ -101,6 +102,18 @@ export const PUT: APIRoute = async ({ params, request, locals }) => {
       timeSlotName: meta?.timeSlotName ?? undefined,
       notes: updated[0].notes ?? undefined,
     }).catch(console.error);
+
+    notifySubscribers("geändert", {
+      id: updated[0].id,
+      startDate: updated[0].startDate,
+      endDate: updated[0].endDate,
+      organizerName: meta?.organizerName ?? undefined,
+      locationName: meta?.locationName ?? undefined,
+      typeName: meta?.typeName ?? undefined,
+      timeSlotName: meta?.timeSlotName ?? undefined,
+      organizerId: updated[0].organizerId,
+      locationId: updated[0].locationId,
+    }).catch(console.error);
     // ── Ende E-Mail ───────────────────────────────────────────────────────────
 
     return new Response(JSON.stringify(updated[0]), {
@@ -143,6 +156,8 @@ export const DELETE: APIRoute = async ({ params, locals }) => {
       .select({
         startDate: events.startDate,
         endDate: events.endDate,
+        organizerId: events.organizerId,   // ← NEU
+        locationId: events.locationId,    // ← NEU
         organizerName: organizers.name,
         locationName: locations.name,
         typeName: eventTypes.name,
@@ -167,6 +182,19 @@ export const DELETE: APIRoute = async ({ params, locals }) => {
         locationName: toDelete.locationName ?? undefined,
         typeName: toDelete.typeName ?? undefined,
         timeSlotName: toDelete.timeSlotName ?? undefined,
+      }).catch(console.error);
+
+      // NEU – Abonnenten benachrichtigen
+      notifySubscribers("gelöscht", {
+        id,
+        startDate: toDelete.startDate,
+        endDate: toDelete.endDate,
+        organizerName: toDelete.organizerName ?? undefined,
+        locationName: toDelete.locationName ?? undefined,
+        typeName: toDelete.typeName ?? undefined,
+        timeSlotName: toDelete.timeSlotName ?? undefined,
+        organizerId: toDelete.organizerId,
+        locationId: toDelete.locationId,
       }).catch(console.error);
     }
 

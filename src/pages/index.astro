@@ -1,8 +1,45 @@
 ---
+// src/pages/index.astro — bestehende Datei, nur den Script-Block ergänzen
 import BaseLayout from "../layouts/BaseLayout.astro";
 import DashboardApp from "../components/dashboard/DashboardApp";
 ---
 
 <BaseLayout title="Dashboard">
+  <!-- Toast für Abmeldung / Anmeldung -->
+  <div
+    id="toastMsg"
+    class="hidden fixed top-4 right-4 z-50 alert alert-success shadow-lg max-w-sm"
+  >
+    <span id="toastText"></span>
+  </div>
+
   <DashboardApp client:load />
 </BaseLayout>
+
+<script>
+  const params = new URLSearchParams(window.location.search);
+
+  const toastMsg = document.getElementById("toastMsg")!;
+  const toastText = document.getElementById("toastText")!;
+
+  if (params.get("abgemeldet") === "1") {
+    toastText.textContent = "👋 Du wurdest erfolgreich abgemeldet.";
+    toastMsg.classList.remove("hidden");
+    // URL bereinigen ohne Reload
+    history.replaceState({}, "", "/");
+    setTimeout(() => toastMsg.classList.add("hidden"), 4000);
+  }
+
+  if (params.get("angemeldet") === "1") {
+    toastText.textContent = "✅ Du wirst ab sofort benachrichtigt!";
+    toastMsg.classList.remove("hidden");
+    history.replaceState({}, "", "/");
+    setTimeout(() => toastMsg.classList.add("hidden"), 4000);
+  }
+  if (params.get("geaendert") === "1") {
+    toastText.textContent = "✅ Deine Abo-Einstellungen wurden gespeichert.";
+    toastMsg.classList.remove("hidden");
+    history.replaceState({}, "", "/");
+    setTimeout(() => toastMsg.classList.add("hidden"), 4000);
+  }
+</script>

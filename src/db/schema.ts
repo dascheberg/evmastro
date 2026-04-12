@@ -112,3 +112,28 @@ export const verification = pgTable("verification", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
+
+// ── NEU: Abonnenten für Terminbenachrichtigungen ─────────────────────────────
+// Diese Zeilen ans Ende von src/db/schema.ts anfügen
+// Außerdem oben im Import "integer" ergänzen falls noch nicht vorhanden:
+// import { ..., integer } from "drizzle-orm/pg-core";
+// Neu hinzufügen: "text" ist schon drin, neu ist nur:  integer().array()
+
+import { pgTable, serial, text, timestamp, integer } from "drizzle-orm/pg-core";
+
+export const subscribers = pgTable("subscribers", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  email: text("email").notNull().unique(),
+  unsubscribeToken: text("unsubscribe_token").notNull().unique(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+
+  // Unabhängige Filter – leeres Array = nichts abonniert
+  // Der Nutzer muss bewusst mindestens einen Eintrag wählen
+  organizerIds: integer("organizer_ids").array().notNull().default([]),
+  locationIds: integer("location_ids").array().notNull().default([]),
+});
+
+// Nach dem Einfügen ins schema.ts:
+//   npm run db:push
+// Das legt die Tabelle in Neon an, ohne bestehende Daten zu verändern.

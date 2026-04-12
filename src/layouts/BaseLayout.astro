@@ -210,6 +210,14 @@ const isAdmin = current.startsWith("/admin");
                     </li>
                     <li>
                       <a
+                        href="/admin/subscribers"
+                        class={`text-red-600 ${current === "/admin/subscribers" ? "font-bold" : ""}`}
+                      >
+                        Abonnenten
+                      </a>
+                    </li>
+                    <li>
+                      <a
                         href="/admin/dokumentation"
                         class={`text-red-600 ${current === "/admin/dokumentation" ? "font-bold" : ""}`}
                       >

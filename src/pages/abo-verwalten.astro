@@ -1,0 +1,187 @@
+---
+// src/pages/abo-verwalten.astro
+export const prerender = false;
+
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { db } from "../db";
+import { organizers, locations, subscribers } from "../db/schema";
+import { eq } from "drizzle-orm";
+
+const token = Astro.url.searchParams.get("token") ?? "";
+
+const [sub] = token
+  ? await db
+      .select({
+        name:         subscribers.name,
+        email:        subscribers.email,
+        organizerIds: subscribers.organizerIds,
+        locationIds:  subscribers.locationIds,
+      })
+      .from(subscribers)
+      .where(eq(subscribers.unsubscribeToken, token))
+  : [];
+
+const allOrganizers = await db.select().from(organizers).orderBy(organizers.name);
+const allLocations  = await db.select().from(locations).orderBy(locations.name);
+
+const invalid = !sub;
+---
+
+<BaseLayout title="Abo-Einstellungen">
+  <span id="tokenHolder" data-token={token} class="hidden"></span>
+
+  <div class="max-w-2xl mx-auto space-y-6">
+
+    <div>
+      <h1 class="text-2xl font-bold">🔔 Abo-Einstellungen</h1>
+      <p class="text-sm text-gray-500">
+        Hier kannst du deine Terminbenachrichtigungen anpassen.
+      </p>
+    </div>
+
+    {invalid ? (
+      <div class="alert alert-error">
+        <span>❌ Dieser Link ist ungültig oder abgelaufen. Bitte nutze den Link aus deiner letzten Benachrichtigungs-E-Mail.</span>
+      </div>
+    ) : (
+      <div class="card bg-base-100 shadow">
+        <div class="card-body space-y-5">
+
+          <!-- Info -->
+          <div class="bg-base-200 rounded-lg px-4 py-3 text-sm">
+            <span class="text-gray-500">Angemeldet als:</span>
+            <span class="font-semibold ml-2">{sub.name} ({sub.email})</span>
+          </div>
+
+          <!-- Meldungen -->
+          <div id="successMsg" class="hidden alert alert-success">
+            <span>✅ Einstellungen gespeichert! Du wirst gleich weitergeleitet…</span>
+          </div>
+          <div id="errorMsg" class="hidden alert alert-error">
+            <span id="errorText"></span>
+          </div>
+
+          <!-- Auswahl-Tabellen nebeneinander -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+
+            <!-- Veranstalter -->
+            <div>
+              <p class="font-semibold mb-1">🏢 Veranstalter</p>
+              <p class="text-xs text-gray-500 mb-2">Benachrichtigung bei allen Terminen dieser Veranstalter.</p>
+              <div class="border rounded-lg overflow-hidden bg-base-100">
+                <table class="table table-sm w-full">
+                  <tbody>
+                    {allOrganizers.map((o) => (
+                      <tr class="hover cursor-pointer org-row">
+                        <td class="w-10">
+                          <input
+                            type="checkbox"
+                            class="checkbox checkbox-sm checkbox-primary org-check"
+                            value={String(o.id)}
+                            checked={sub.organizerIds.includes(o.id)}
+                          />
+                        </td>
+                        <td class="text-sm">{o.name}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Orte -->
+            <div>
+              <p class="font-semibold mb-1">📍 Veranstaltungsorte</p>
+              <p class="text-xs text-gray-500 mb-2">Benachrichtigung bei allen Terminen an diesen Orten.</p>
+              <div class="border rounded-lg overflow-hidden bg-base-100">
+                <table class="table table-sm w-full">
+                  <tbody>
+                    {allLocations.map((l) => (
+                      <tr class="hover cursor-pointer loc-row">
+                        <td class="w-10">
+                          <input
+                            type="checkbox"
+                            class="checkbox checkbox-sm checkbox-secondary loc-check"
+                            value={String(l.id)}
+                            checked={sub.locationIds.includes(l.id)}
+                          />
+                        </td>
+                        <td class="text-sm">{l.name}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Buttons -->
+          <div class="flex gap-3">
+            <button id="saveBtn" class="btn btn-primary flex-1">
+              Einstellungen speichern
+            </button>
+            <button id="unsubBtn" class="btn btn-outline btn-error">
+              Abmelden
+            </button>
+          </div>
+
+        </div>
+      </div>
+    )}
+
+  </div>
+</BaseLayout>
+
+<script>
+  const token = (document.getElementById("tokenHolder") as HTMLElement)?.dataset.token ?? "";
+
+  // Zeilen-Klick togglet Checkbox
+  document.querySelectorAll(".org-row, .loc-row").forEach((row) => {
+    row.addEventListener("click", (e) => {
+      const cb = row.querySelector("input[type=checkbox]") as HTMLInputElement;
+      if (cb && e.target !== cb) cb.checked = !cb.checked;
+    });
+  });
+
+  // Einstellungen speichern → dann Dashboard
+  document.getElementById("saveBtn")?.addEventListener("click", async () => {
+    const organizerIds = [...document.querySelectorAll(".org-check:checked")]
+      .map((el) => Number((el as HTMLInputElement).value));
+    const locationIds  = [...document.querySelectorAll(".loc-check:checked")]
+      .map((el) => Number((el as HTMLInputElement).value));
+
+    const errDiv  = document.getElementById("errorMsg")!;
+    const errText = document.getElementById("errorText")!;
+    const succDiv = document.getElementById("successMsg")!;
+
+    errDiv.classList.add("hidden");
+    succDiv.classList.add("hidden");
+
+    const res = await fetch("/api/subscribers/manage", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token, organizerIds, locationIds }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      errText.textContent = data.error ?? "Ein Fehler ist aufgetreten.";
+      errDiv.classList.remove("hidden");
+      return;
+    }
+
+    succDiv.classList.remove("hidden");
+    // Nach 2 Sekunden zum Dashboard
+    setTimeout(() => { window.location.href = "/?geaendert=1"; }, 2000);
+  });
+
+  // Abmelden → bestätigen → API → Dashboard
+  document.getElementById("unsubBtn")?.addEventListener("click", async () => {
+    if (!confirm("Wirklich abmelden? Du erhältst dann keine Benachrichtigungen mehr.")) return;
+
+    await fetch(`/api/subscribers/unsubscribe-silent?token=${token}`, { method: "DELETE" });
+    window.location.href = "/?abgemeldet=1";
+  });
+</script>

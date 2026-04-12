@@ -9,6 +9,7 @@ import {
 } from "../../../db/schema";
 import { eq, sql, asc, desc, and, gte, lte, or, ilike } from "drizzle-orm";
 import { notifyEventCreated } from "../../../lib/email";
+import { notifySubscribers } from "../../../lib/email";
 
 export const prerender = false;
 
@@ -161,6 +162,19 @@ export const POST: APIRoute = async ({ request, locals }) => {
       .where(eq(events.id, inserted.id));
 
     notifyEventCreated({ ...inserted, ...meta }).catch(console.error);
+
+    // NEU – Abonnenten benachrichtigen
+    notifySubscribers("neu", {
+      id: inserted.id,
+      startDate: inserted.startDate,
+      endDate: inserted.endDate,
+      organizerName: meta?.organizerName ?? undefined,
+      locationName: meta?.locationName ?? undefined,
+      typeName: meta?.typeName ?? undefined,
+      timeSlotName: meta?.timeSlotName ?? undefined,
+      organizerId: inserted.organizerId,
+      locationId: inserted.locationId,
+    }).catch(console.error);
     // ── Ende E-Mail ───────────────────────────────────────────────────────────
 
     return new Response(JSON.stringify(inserted), {

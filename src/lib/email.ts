@@ -1,8 +1,8 @@
 // src/lib/email.ts
 import { Resend } from "resend";
 import { db } from "../db";
-import { user } from "../db/schema";
-import { eq } from "drizzle-orm";
+import { user, subscribers } from "../db/schema";
+import { eq, or, arrayContains } from "drizzle-orm";
 
 const resend = new Resend(import.meta.env.RESEND_API_KEY);
 
@@ -146,4 +146,69 @@ export async function notifyImport(count: number, events: EventData[]) {
       <a class="btn" href="${BASE_URL}/admin/events">Alle Events ansehen</a>`,
     ),
   );
+}
+
+// src/lib/email.ts — Ergänzung (korrigiert)
+// notifySubscribers()-Funktion — den Abmeldelink war zwar berechnet
+// aber nicht ins HTML-Template eingefügt. Hier die korrigierte Version:
+
+type SubscriberEventData = {
+  id: number;
+  startDate: string;
+  endDate: string;
+  organizerName?: string;
+  locationName?: string;
+  typeName?: string;
+  timeSlotName?: string;
+  organizerId: number;
+  locationId: number;
+};
+
+export async function notifySubscribers(
+  action: "neu" | "geändert" | "gelöscht",
+  event: SubscriberEventData
+) {
+  const allSubs = await db
+    .select()
+    .from(subscribers)
+    .where(
+      or(
+        arrayContains(subscribers.organizerIds, [event.organizerId]),
+        arrayContains(subscribers.locationIds, [event.locationId])
+      )
+    );
+
+  if (allSubs.length === 0) return;
+
+  const actionLabel = {
+    neu: "🆕 Neue Veranstaltung",
+    geändert: "✏️ Veranstaltung geändert",
+    gelöscht: "🗑️ Veranstaltung abgesagt",
+  }[action];
+
+  const sends = allSubs.map((sub) => {
+    const unsubUrl = `${BASE_URL}/abo-verwalten?token=${sub.unsubscribeToken}`;
+
+    const body = `
+      ${eventTable(event)}
+      <a class="btn" href="${BASE_URL}">Zum Kalender</a>
+      <div class="footer">
+        Du erhältst diese E-Mail, weil du Terminbenachrichtigungen abonniert hast.<br/>
+        <a href="${unsubUrl}" style="color:#9ca3af">Benachrichtigungen abbestellen</a>
+      </div>
+    `;
+
+    return resend.emails.send({
+      from: FROM,
+      to: sub.email,
+      subject: `${actionLabel} – Gemeinde Schmalfeld`,
+      html: layout(actionLabel, body),
+    });
+  });
+
+  const results = await Promise.allSettled(sends);
+  results.forEach((r, i) => {
+    if (r.status === "rejected")
+      console.error(`[email] Subscriber ${allSubs[i].email} fehlgeschlagen:`, r.reason);
+  });
 }

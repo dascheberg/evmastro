@@ -1,0 +1,35 @@
+---
+// src/pages/admin/subscribers.astro
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import SubscribersTable from "../../components/admin/SubscribersTable";
+import { db } from "../../db";
+import { organizers, locations } from "../../db/schema";
+
+const allOrganizers = await db
+  .select()
+  .from(organizers)
+  .orderBy(organizers.name);
+const allLocations = await db.select().from(locations).orderBy(locations.name);
+---
+
+<BaseLayout title="Abonnenten" current="/admin/subscribers">
+  <div class="max-w-5xl mx-auto space-y-6">
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-bold">Abonnenten</h1>
+        <p class="text-sm text-gray-500 mt-1">
+          Personen, die automatische Terminbenachrichtigungen erhalten.
+        </p>
+      </div>
+      <a href="/abonnieren" target="_blank" class="btn btn-outline btn-sm">
+        🔗 Anmeldeseite
+      </a>
+    </div>
+
+    <SubscribersTable
+      client:load
+      organizers={allOrganizers}
+      locations={allLocations}
+    />
+  </div>
+</BaseLayout>
