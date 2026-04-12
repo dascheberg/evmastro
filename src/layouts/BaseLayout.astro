@@ -22,6 +22,7 @@ const isAdmin = current.startsWith("/admin");
 
   <body class="min-h-screen flex flex-col bg-base-200">
     <nav class="navbar bg-base-100 shadow">
+      <!-- ── Hamburger (mobile) ───────────────────────────────────────────── -->
       <div class="navbar-start">
         <div class="dropdown">
           <label tabindex="0" class="btn btn-ghost lg:hidden">
@@ -117,6 +118,14 @@ const isAdmin = current.startsWith("/admin");
                   </li>
                   <li>
                     <a
+                      href="/admin/subscribers"
+                      class={`text-red-600 ${current === "/admin/subscribers" ? "font-bold" : ""}`}
+                    >
+                      Abonnenten
+                    </a>
+                  </li>
+                  <li>
+                    <a
                       href="/admin/dokumentation"
                       class={`text-red-600 ${current === "/admin/dokumentation" ? "font-bold" : ""}`}
                     >
@@ -128,11 +137,13 @@ const isAdmin = current.startsWith("/admin");
             }
           </ul>
         </div>
+
         <a href="/" class="btn btn-ghost normal-case text-xl"
           >Event Manager by abg</a
         >
       </div>
 
+      <!-- ── Desktop-Menü (center) ────────────────────────────────────────── -->
       <div class="navbar-center hidden lg:flex">
         <ul class="menu menu-horizontal px-1 gap-1">
           <li>
@@ -232,6 +243,7 @@ const isAdmin = current.startsWith("/admin");
         </ul>
       </div>
 
+      <!-- ── Login / Logout (end) ─────────────────────────────────────────── -->
       <div class="navbar-end gap-2">
         {
           isLoggedIn ? (
@@ -252,10 +264,12 @@ const isAdmin = current.startsWith("/admin");
       </div>
     </nav>
 
+    <!-- ── Seiteninhalt ──────────────────────────────────────────────────── -->
     <main class="flex-1 p-4">
       <slot />
     </main>
 
+    <!-- ── Footer ───────────────────────────────────────────────────────── -->
     <footer class="footer footer-center p-4 bg-base-100 text-base-content">
       <aside>
         <p>© {new Date().getFullYear()} – Datenschutzerklärung – Impressum</p>
@@ -263,6 +277,7 @@ const isAdmin = current.startsWith("/admin");
     </footer>
   </body>
 </html>
+
 <script>
   document.getElementById("logoutBtn")?.addEventListener("click", async () => {
     await fetch("/api/auth/logout", {
