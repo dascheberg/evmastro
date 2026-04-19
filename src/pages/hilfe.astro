@@ -25,7 +25,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
         <li>Tage mit Veranstaltungen sind farblich hervorgehoben.</li>
         <li>Ein Klick auf einen Tag zeigt die Veranstaltungen dieses Tages.</li>
         <li>
-          Neben dem Dashboard gibt es auch eine Listenansicht aller
+          Neben der Kalenderansicht gibt es auch eine Listenansicht aller
           Veranstaltungen, die über das Menü erreichbar ist. Hier können Sie
           bequem nach Veranstalter, Ort oder Typ und Zeiträumen filtern.
         </li>
@@ -58,6 +58,31 @@ import BaseLayout from "../layouts/BaseLayout.astro";
           > wenden.
         </span>
       </div>
+    </section>
+
+    <!-- Dashboard (Admin) -->
+    <section class="space-y-4">
+      <h2 class="text-xl font-bold border-b pb-2">📊 Dashboard (Admin)</h2>
+      <p>
+        Nach dem Login zeigt das Dashboard die wichtigsten Informationen auf
+        einen Blick.
+      </p>
+      <ul class="list-disc list-inside space-y-1 text-gray-700">
+        <li>
+          Statistik-Widgets zu Veranstaltungen, Veranstaltern, Orten und Typen.
+        </li>
+        <li>Monatskalender mit markierten Veranstaltungstagen.</li>
+        <li>
+          Widget „Anstehende Veranstaltungen“ mit Tabs
+          <strong>Heute</strong>, <strong>7 Tage</strong> und <strong
+            >30 Tage</strong
+          >.
+        </li>
+        <li>
+          Hinweisbereich „Terminbenachrichtigungen“ mit Link zur Seite
+          <strong>Abonnieren</strong>.
+        </li>
+      </ul>
     </section>
 
     <!-- Veranstaltungen verwalten -->
