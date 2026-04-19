@@ -23,7 +23,8 @@ export const POST: APIRoute = async ({ request }) => {
     );
   }
 
-  if (!email.includes("@")) {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email.trim())) {
     return new Response(
       JSON.stringify({ error: "Bitte eine gültige E-Mail-Adresse eingeben." }),
       { status: 400 }

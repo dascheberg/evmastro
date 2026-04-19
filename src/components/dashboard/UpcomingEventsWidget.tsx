@@ -29,6 +29,7 @@ export default function UpcomingEventsWidget() {
 
     return (
         <div className="p-4 bg-white rounded shadow space-y-4">
+            <p>Hier werden alle Termine angezeigt, die heute, in den nächsten 7 Tagen bzw. 30 Tagen stattfinden.</p>
 
             {/* Tabs */}
             <div className="flex gap-2 border-b pb-2">
@@ -38,7 +39,7 @@ export default function UpcomingEventsWidget() {
                         className={`px-3 py-1 rounded ${activeTab === tab ? "bg-green-600 text-white" : "bg-gray-200"}`}
                         onClick={() => setActiveTab(tab)}
                     >
-                        {tab === "today" ? "Heute" : tab === "week" ? "7 Tage" : "Monat"}
+                        {tab === "today" ? "Heute" : tab === "week" ? "7 Tage" : "30 Tage"}
                     </button>
                 ))}
             </div>
@@ -50,7 +51,7 @@ export default function UpcomingEventsWidget() {
                 )}
 
                 {items.map((ev) => {
-                    const isToday = ev.dateLabel === todayStr; // NEU
+                    const isToday = ev.dateLabel === todayStr;
                     return (
                         <a
                             key={ev.id}

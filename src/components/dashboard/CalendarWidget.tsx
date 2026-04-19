@@ -77,7 +77,7 @@ export default function CalendarWidget({ onSelectDate }: { onSelectDate: (date: 
     };
 
     return (
-        <div className="p-4 bg-white rounded shadow space-y-4">
+        <div className="p-4 bg-white rounded-xl border border-2 border-gray-200 shadow space-y-4">
             <div className="flex justify-between items-center">
                 <button
                     className="btn btn-sm"

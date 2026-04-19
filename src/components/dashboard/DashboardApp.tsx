@@ -15,7 +15,7 @@ export default function DashboardApp() {
             <h1 className="text-2xl font-bold">Dashboard</h1>
 
             {/* ── NEU: Abo-Banner ─────────────────────────────────────────────── */}
-            <div className="w-1/2 mr-12 flex items-center justify-between gap-4 rounded-xl border border-blue-200 bg-blue-50 px-5 py-3">
+            <div className="w-[calc(33.333%-0.667rem)] flex items-center justify-between gap-4 rounded-xl border border-blue-200 bg-blue-50 px-5 py-3">
                 <div className="flex items-center gap-3">
                     <span className="text-2xl">🔔</span>
                     <div>
