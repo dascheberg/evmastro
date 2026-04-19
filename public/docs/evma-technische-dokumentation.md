@@ -16,17 +16,17 @@ EvMA ist ein webbasierter Veranstaltungskalender für die Gemeinde Schmalfeld. D
 
 ## 2. Technischer Stack
 
-| Komponente | Technologie | Version |
-|---|---|---|
-| Framework | Astro (SSR) | 5.18.1 |
-| UI-Komponenten | React | 18.3.1 |
-| Sprache | TypeScript | – |
-| Styling | TailwindCSS + DaisyUI | 4.x / 5.x |
-| Datenbank | PostgreSQL (Neon) | – |
-| ORM | Drizzle ORM | 0.45.x |
-| Authentifizierung | Better Auth | 1.5.x |
-| E-Mail | Resend | 4.5.x |
-| Deployment | Vercel | – |
+| Komponente        | Technologie           | Version   |
+| ----------------- | --------------------- | --------- |
+| Framework         | Astro (SSR)           | 5.18.1    |
+| UI-Komponenten    | React                 | 18.3.1    |
+| Sprache           | TypeScript            | –         |
+| Styling           | TailwindCSS + DaisyUI | 4.x / 5.x |
+| Datenbank         | PostgreSQL (Neon)     | –         |
+| ORM               | Drizzle ORM           | 0.45.x    |
+| Authentifizierung | Better Auth           | 1.5.x     |
+| E-Mail            | Resend                | 4.5.x     |
+| Deployment        | Vercel                | –         |
 
 > **Wichtig:** Versions-Pins in `package.json` nicht erhöhen — insbesondere Astro nicht über 5.18 und React nicht über 18.3.1. Immer `--legacy-peer-deps` bei `npm install` verwenden.
 
@@ -69,6 +69,7 @@ evmastro/
 ## 4. Datenbank
 
 ### Verbindung
+
 Die Datenbank läuft bei **Neon** (serverless PostgreSQL).
 Verbindungsstring in `.env.local` / Vercel:
 
@@ -80,20 +81,21 @@ DATABASE_URL=postgresql://neondb_owner:PASSWORT@ep-....neon.tech/event_manager?s
 
 ### Schema-Übersicht
 
-| Tabelle | Inhalt |
-|---|---|
-| `events` | Veranstaltungen (startDate, endDate, organizerId, locationId, typeId, timeId, notes, recurrence, importId) |
-| `organizers` | Veranstalter-Lookup |
-| `locations` | Orte-Lookup |
-| `event_types` | Veranstaltungsarten-Lookup |
-| `time_slots` | Zeitfenster-Lookup |
-| `import_log` | Import-Protokoll |
-| `user` | Admin-Benutzer (inkl. `notify`-Flag für E-Mail-Benachrichtigungen) |
-| `session` | Better Auth Sessions |
-| `account` | Better Auth Accounts (inkl. Passwort-Hash) |
-| `verification` | Better Auth Verifikations-Tokens |
+| Tabelle        | Inhalt                                                                                                     |
+| -------------- | ---------------------------------------------------------------------------------------------------------- |
+| `events`       | Veranstaltungen (startDate, endDate, organizerId, locationId, typeId, timeId, notes, recurrence, importId) |
+| `organizers`   | Veranstalter-Lookup                                                                                        |
+| `locations`    | Orte-Lookup                                                                                                |
+| `event_types`  | Veranstaltungsarten-Lookup                                                                                 |
+| `time_slots`   | Zeitfenster-Lookup                                                                                         |
+| `import_log`   | Import-Protokoll                                                                                           |
+| `user`         | Admin-Benutzer (inkl. `notify`-Flag für E-Mail-Benachrichtigungen)                                         |
+| `session`      | Better Auth Sessions                                                                                       |
+| `account`      | Better Auth Accounts (inkl. Passwort-Hash)                                                                 |
+| `verification` | Better Auth Verifikations-Tokens                                                                           |
 
 ### Migration nach Schemaänderung
+
 ```bash
 npm run db:push
 ```
@@ -105,19 +107,23 @@ npm run db:push
 Better Auth übernimmt Login, Session-Management und Passwort-Hashing.
 
 ### Konfiguration (`src/lib/auth.ts`)
+
 - `trustedOrigins`: Alle erlaubten Ursprungs-URLs (localhost + Produktiv-Domain)
 - `baseURL`: Muss exakt mit der URL im Browser übereinstimmen
 - `secret`: Zufälliger Secret-String
 
 ### Wichtige Regeln
+
 - Passwörter **niemals** mit `bcryptjs` direkt hashen — immer über Better Auth's eigenen Mechanismus (`auth.$context` → `ctx.password.hash`)
 - Alle fetch-Aufrufe (POST, PUT, DELETE) müssen den Header `Content-Type: application/json` setzen, sonst blockt Better Auth den Request mit 403
 - Login-Formular als JavaScript-fetch statt HTML-Form-Submit, da Better Auth Form-POSTs als CSRF blockiert
 
 ### Admin-Schutz
+
 Die Middleware (`src/middleware.ts`) schützt alle Routen unter `/admin`. Nicht eingeloggte Benutzer werden zu `/login` weitergeleitet.
 
 ### Passwörter zurücksetzen
+
 Falls Admins sich nicht mehr einloggen können:
 
 ```bash
@@ -137,7 +143,9 @@ npx tsx scripts/reset-passwords.ts
 ## 6. E-Mail-Benachrichtigungen (Resend)
 
 ### Funktionsweise
+
 Bei folgenden Ereignissen wird automatisch eine E-Mail verschickt:
+
 - Neues Event anlegen
 - Event bearbeiten
 - Event löschen
@@ -146,18 +154,20 @@ Bei folgenden Ereignissen wird automatisch eine E-Mail verschickt:
 Empfänger sind alle Admin-User mit aktiviertem `notify`-Flag (einstellbar in der Admin-Verwaltung unter Verwaltung → Benutzer).
 
 ### Konfiguration
-| Variable | Wert |
-|---|---|
-| `RESEND_API_KEY` | API-Key von resend.com |
+
+| Variable            | Wert                                         |
+| ------------------- | -------------------------------------------- |
+| `RESEND_API_KEY`    | API-Key von resend.com                       |
 | `NOTIFY_FROM_EMAIL` | `EvMA Schmalfeld <noreply@gemeinde24640.de>` |
-| `PUBLIC_BASE_URL` | `https://www.gemeinde24640.de` |
+| `PUBLIC_BASE_URL`   | `https://www.gemeinde24640.de`               |
 
 ### DNS-Einträge (Strato / gemeinde24640.de)
-| Typ | Name | Wert |
-|---|---|---|
-| TXT | `resend._domainkey` | DKIM-Wert von Resend |
-| TXT | `send` | `v=spf1 include:amazonses.com ~all` |
-| MX (Subdomain `send.gemeinde24640.de`) | – | `feedback-smtp.eu-west-1.amazonses.com` |
+
+| Typ                                    | Name                | Wert                                    |
+| -------------------------------------- | ------------------- | --------------------------------------- |
+| TXT                                    | `resend._domainkey` | DKIM-Wert von Resend                    |
+| TXT                                    | `send`              | `v=spf1 include:amazonses.com ~all`     |
+| MX (Subdomain `send.gemeinde24640.de`) | –                   | `feedback-smtp.eu-west-1.amazonses.com` |
 
 > **Wichtig:** Der MX-Eintrag gehört auf die Subdomain `send.gemeinde24640.de`, nicht auf die Hauptdomain. Bei Strato: neue Subdomain `send` anlegen, dort den MX-Eintrag setzen.
 
@@ -166,6 +176,7 @@ Empfänger sind alle Admin-User mit aktiviertem `notify`-Flag (einstellbar in de
 ## 7. Deployment
 
 ### Vercel Environment Variables
+
 Folgende Variablen müssen in Vercel gesetzt sein:
 
 ```
@@ -178,20 +189,24 @@ PUBLIC_BASE_URL=https://www.gemeinde24640.de
 ```
 
 ### Deploy-Prozess
+
 ```bash
 git add .
 git commit -m "beschreibung"
 git push
 ```
+
 Vercel deployed automatisch nach jedem Push auf `main`.
 
 ### Lokale Entwicklung
+
 ```bash
 npm run dev
 # → http://localhost:4321
 ```
 
 `.env.local` für lokale Entwicklung:
+
 ```
 DATABASE_URL=postgresql://...event_manager?sslmode=verify-full
 BETTER_AUTH_SECRET=...
@@ -206,30 +221,34 @@ PUBLIC_BASE_URL=http://localhost:4321
 ## 8. Dashboard (Admin)
 
 Die Dashboard-Ansicht setzt sich in `src/components/dashboard/` aus mehreren React-Komponenten zusammen:
+
 - `DashboardApp.tsx`: Layout, Grid-Aufteilung und Hinweisbereich "Terminbenachrichtigungen"
 - `CalendarWidget.tsx`: Monatskalender mit Tagesauswahl
 - `EventListForDay.tsx`: Detail-Liste für den ausgewählten Tag
 - `UpcomingEventsWidget.tsx`: anstehende Termine in drei Tabs
 
 ### UpcomingEventsWidget
+
 - Tabs: **Heute**, **7 Tage**, **30 Tage**
 - Datenquelle: `GET /api/events-upcoming`
 - Zeitraumlogik in der API:
-- `today`: Events am aktuellen Tag
-- `nextWeek`: Events von heute bis heute + 7 Tage (inklusive)
-- `nextMonth`: Events von heute bis heute + 30 Tage (inklusive)
+  - `today`: Events am aktuellen Tag
+  - `nextWeek`: Events von heute bis heute + 7 Tage (inklusive)
+  - `nextMonth`: Events von heute bis heute + 30 Tage (inklusive)
 
 ---
 
 ## 9. Import-System
 
 ### Dateiverarbeitung (`src/lib/import/readFile.ts`)
+
 - Unterstützt CSV (Semikolon-getrennt) und Excel (.xlsx)
 - Excel-Zeitwerte (Bruchteil eines Tages, z.B. `0.75` für 18:00) werden automatisch in Zeitstrings umgewandelt
 - Excel-Datumsseriennummern (z.B. `46023` für 01.01.2026) werden automatisch in ISO-Datumsstrings umgewandelt (Bereich 40000–60000 = ca. 2009–2064)
 - Leere Spalten und leere Zeilen werden automatisch entfernt
 
 ### Veranstalter-Modi
+
 Der Import unterstützt zwei Modi:
 
 **Ein Veranstalter:** Alle Events in der Datei gehören zum selben Veranstalter, der vor dem Upload ausgewählt wird.
@@ -237,6 +256,7 @@ Der Import unterstützt zwei Modi:
 **Mehrere Veranstalter:** Die Datei enthält eine Spalte mit Veranstalternamen. Diese wird beim Mapping als Pflichtfeld zugeordnet. Unbekannte Veranstalternamen können im Schritt "Unbekannte Werte" neu angelegt oder verworfen werden.
 
 ### Normalisierung (`src/lib/import/normalize.ts`)
+
 - Deutsches Datumsformat (`01.04.2025`) → ISO (`2025-04-01`)
 - ISO-Format wird direkt übernommen
 - Ungültige Datumswerte → Zeile wird verworfen
@@ -263,6 +283,7 @@ GET /api/public/events
 | `limit` | Max. Ergebnisse (Standard: 50, max: 200) | `100` |
 
 **iCal-Feed:**
+
 ```
 GET /api/events-ical
 ```
