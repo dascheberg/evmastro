@@ -1,7 +1,7 @@
 # EvMA – Admin-Handbuch
 
 **Veranstaltungskalender Gemeinde Schmalfeld**
-Version: 1.1 | Stand: März 2026
+Version: 1.2 | Stand: April 2026
 
 ---
 
@@ -53,7 +53,8 @@ Das Dashboard zeigt auf einen Blick:
 - Anzahl aller Veranstaltungen
 - Veranstaltungen pro Veranstalter / Ort / Typ
 - Monatskalender mit Veranstaltungstagen
-- Nächste anstehende Veranstaltungen
+- Nächste anstehende Veranstaltungen (Tabs: Heute, 7 Tage, 30 Tage)
+- Hinweisbereich mit Link zur Anmeldung für Terminbenachrichtigungen
 
 ---
 

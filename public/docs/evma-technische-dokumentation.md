@@ -1,7 +1,7 @@
 # EvMA – Technische Dokumentation
 
 **Veranstaltungskalender Gemeinde Schmalfeld**
-Version: 1.1 | Stand: März 2026
+Version: 1.2 | Stand: April 2026
 
 ---
 
@@ -203,7 +203,25 @@ PUBLIC_BASE_URL=http://localhost:4321
 
 ---
 
-## 8. Import-System
+## 8. Dashboard (Admin)
+
+Die Dashboard-Ansicht setzt sich in `src/components/dashboard/` aus mehreren React-Komponenten zusammen:
+- `DashboardApp.tsx`: Layout, Grid-Aufteilung und Hinweisbereich "Terminbenachrichtigungen"
+- `CalendarWidget.tsx`: Monatskalender mit Tagesauswahl
+- `EventListForDay.tsx`: Detail-Liste für den ausgewählten Tag
+- `UpcomingEventsWidget.tsx`: anstehende Termine in drei Tabs
+
+### UpcomingEventsWidget
+- Tabs: **Heute**, **7 Tage**, **30 Tage**
+- Datenquelle: `GET /api/events-upcoming`
+- Zeitraumlogik in der API:
+- `today`: Events am aktuellen Tag
+- `nextWeek`: Events von heute bis heute + 7 Tage (inklusive)
+- `nextMonth`: Events von heute bis heute + 30 Tage (inklusive)
+
+---
+
+## 9. Import-System
 
 ### Dateiverarbeitung (`src/lib/import/readFile.ts`)
 - Unterstützt CSV (Semikolon-getrennt) und Excel (.xlsx)
@@ -225,7 +243,7 @@ Der Import unterstützt zwei Modi:
 
 ---
 
-## 9. Öffentliche API
+## 10. Öffentliche API
 
 Externe Websites können Events ohne Login abrufen:
 
@@ -251,14 +269,14 @@ GET /api/events-ical
 
 ---
 
-## 10. Bekannte Einschränkungen / Offene Punkte
+## 11. Bekannte Einschränkungen / Offene Punkte
 
 - **Recurrence-UI:** Das `recurrence`-Feld existiert in der Datenbank und wird angezeigt, aber die Eingabe-Maske im EventForm ist noch nicht implementiert.
 - **notes-Spalte:** Das `notes`-Feld ist in der Datenbank vorhanden und wird in der Detailansicht angezeigt, aber bewusst nicht in der EventsTable-Spaltenansicht.
 
 ---
 
-## 11. Wichtige npm-Befehle
+## 12. Wichtige npm-Befehle
 
 ```bash
 npm run dev          # Lokaler Entwicklungsserver
