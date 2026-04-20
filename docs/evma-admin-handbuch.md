@@ -25,10 +25,10 @@ Nach erfolgreichem Login landet man automatisch im Admin-Dashboard.
 
 > **Hinweis:** Bei falschem Passwort erscheint eine Fehlermeldung. Bei Problemen bitte den Administrator kontaktieren.
 
-### Passwort vergessen?
+#### Passwort vergessen?
 Das Zurücksetzen erfolgt durch den technischen Administrator. Bitte eine E-Mail an `progdieter@dascheberg.de` senden.
 
-### Ausloggen
+#### Ausloggen
 Oben rechts in der Navigation auf **Logout** klicken.
 
 ---
@@ -60,7 +60,7 @@ Das Dashboard zeigt auf einen Blick:
 
 ## 5. Veranstaltungen verwalten
 
-### 5.1 Veranstaltung anlegen
+#### 5.1 Veranstaltung anlegen
 
 1. Im Menü **Veranstaltungen** auswählen
 2. Rechts erscheint das Eingabeformular
@@ -76,14 +76,14 @@ Das Dashboard zeigt auf einen Blick:
 
 > **Hinweis:** Veranstalter, Orte, Typen und Zeitfenster können direkt im Formular neu angelegt werden — einfach den gewünschten Namen eintippen und auf **Neu anlegen** klicken.
 
-### 5.2 Veranstaltung bearbeiten
+#### 5.2 Veranstaltung bearbeiten
 
 1. In der Tabelle links die gewünschte Veranstaltung suchen
 2. Auf das **Stift-Symbol** (🖊) in der Zeile klicken
 3. Daten im Formular rechts anpassen
 4. Auf **Speichern** klicken
 
-### 5.3 Veranstaltung löschen
+#### 5.3 Veranstaltung löschen
 
 1. In der Tabelle links die gewünschte Veranstaltung suchen
 2. Auf das **Papierkorb-Symbol** (🗑) in der Zeile klicken
@@ -92,7 +92,7 @@ Das Dashboard zeigt auf einen Blick:
 
 > **Achtung:** Das Löschen kann nicht rückgängig gemacht werden!
 
-### 5.4 Suchen und Filtern
+#### 5.4 Suchen und Filtern
 
 Die Tabelle bietet folgende Filtermöglichkeiten:
 - **Freitextsuche:** Sucht in Veranstalter, Ort, Typ und Bemerkung
@@ -104,11 +104,11 @@ Die Tabelle bietet folgende Filtermöglichkeiten:
 
 ---
 
-## 6. Import
+### 6. Import
 
 Mit der Import-Funktion können Veranstaltungen aus CSV- oder Excel-Dateien massenweise importiert werden.
 
-### 6.1 Datei vorbereiten
+#### 6.1 Datei vorbereiten
 
 Die Datei muss folgende Spalten enthalten (Bezeichnungen können variieren, werden beim Import zugeordnet):
 
@@ -124,7 +124,7 @@ Die Datei muss folgende Spalten enthalten (Bezeichnungen können variieren, werd
 
 > **Hinweis zu Excel-Dateien:** Datumsfelder die intern als Seriennummern gespeichert sind (z.B. `46023` statt `01.01.2026`) werden automatisch korrekt umgewandelt.
 
-### 6.2 Import-Ablauf
+#### 6.2 Import-Ablauf
 
 1. Im Menü **Import** auswählen
 2. **Veranstalter-Modus wählen:**
@@ -138,7 +138,7 @@ Die Datei muss folgende Spalten enthalten (Bezeichnungen können variieren, werd
 8. Nicht erkannte Werte (Veranstalter, Orte etc.) zuordnen oder neu anlegen
 9. Import mit **Import starten** abschließen
 
-### 6.3 Import-Protokoll
+#### 6.3 Import-Protokoll
 
 Alle durchgeführten Importe werden protokolliert. Das Protokoll ist unter **Verwaltung → Import-Protokolle** einsehbar. Von dort aus können Importe auch rückgängig gemacht werden (alle importierten Events eines Durchlaufs werden gelöscht).
 
@@ -152,17 +152,17 @@ Unter **Stammdaten** können folgende Listen gepflegt werden:
 - **Veranstaltungstypen**
 - **Zeitfenster**
 
-### Neuen Eintrag anlegen
+#### Neuen Eintrag anlegen
 1. Gewünschte Liste auswählen
 2. Namen eingeben
 3. Auf **Hinzufügen** klicken
 
-### Eintrag umbenennen
+#### Eintrag umbenennen
 1. Auf das **Stift-Symbol** klicken
 2. Neuen Namen eingeben
 3. Bestätigen
 
-### Eintrag löschen
+#### Eintrag löschen
 > **Achtung:** Einträge die noch bei Veranstaltungen verwendet werden, können nicht gelöscht werden.
 
 ---
@@ -171,14 +171,14 @@ Unter **Stammdaten** können folgende Listen gepflegt werden:
 
 Unter **Verwaltung → Benutzer** können Admin-Accounts verwaltet werden.
 
-### E-Mail-Benachrichtigungen aktivieren
+#### E-Mail-Benachrichtigungen aktivieren
 In der Benutzerliste gibt es eine **Mail-Info**-Checkbox. Ist sie aktiviert, erhält dieser Benutzer automatisch E-Mails bei:
 - Neu angelegten Veranstaltungen
 - Geänderten Veranstaltungen
 - Gelöschten Veranstaltungen
 - Durchgeführten Importen
 
-### Passwort ändern
+#### Passwort ändern
 1. In der Benutzerliste auf **Passwort ändern** klicken
 2. Neues Passwort eingeben (mindestens 8 Zeichen)
 3. Bestätigen

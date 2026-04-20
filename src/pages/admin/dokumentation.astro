@@ -3,19 +3,27 @@ export const prerender = false;
 
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import { auth } from "../../lib/auth";
+import { readFile } from "node:fs/promises";
+import { marked } from "marked";
 
 const session = await auth.api.getSession({ headers: Astro.request.headers });
 if (!session) return Astro.redirect("/login");
 
 const tab = Astro.url.searchParams.get("tab") ?? "admin";
+const mdFile =
+  tab === "admin"
+    ? new URL("../../../public/docs/evma-admin-handbuch.md", import.meta.url)
+    : new URL("../../../public/docs/evma-technische-dokumentation.md", import.meta.url);
+const md = await readFile(mdFile, "utf-8");
+const html = marked.parse(md, { gfm: true, breaks: true }) as string;
 ---
 
 <BaseLayout title="Dokumentation">
   <div class="max-w-4xl mx-auto py-8 px-4 space-y-6">
-    <div class="flex items-center justify-between flex-wrap gap-4">
+    <div class="docs-hero flex items-center justify-between flex-wrap gap-4 rounded-xl border p-6 shadow-sm">
       <div>
         <h1 class="text-2xl font-bold text-gray-800">Dokumentation</h1>
-        <p class="text-sm text-gray-500 mt-1">
+        <p class="text-sm text-gray-600 mt-1">
           Handbücher zum Lesen und Herunterladen
         </p>
       </div>
@@ -25,14 +33,14 @@ const tab = Astro.url.searchParams.get("tab") ?? "admin";
         <a
           href="/docs/evma-admin-handbuch.pdf"
           download
-          class="btn btn-sm bg-green-800 text-white gap-2"
+          class="docs-download btn btn-sm text-white gap-2 border-0"
         >
           📥 Admin-Handbuch (PDF)
         </a>
         <a
           href="/docs/evma-technische-dokumentation.pdf"
           download
-          class="btn btn-sm btn-outline gap-2"
+          class="docs-download docs-download-secondary btn btn-sm gap-2"
         >
           📥 Technische Doku (PDF)
         </a>
@@ -40,16 +48,16 @@ const tab = Astro.url.searchParams.get("tab") ?? "admin";
     </div>
 
     <!-- Tabs -->
-    <div class="tabs tabs-bordered">
+    <div class="docs-tabs tabs tabs-boxed rounded-xl border p-1">
       <a
         href="?tab=admin"
-        class={`tab tab-lg font-medium ${tab === "admin" ? "tab-active text-green-800" : ""}`}
+        class={`tab tab-lg font-medium rounded-lg ${tab === "admin" ? "tab-active" : ""}`}
       >
         📋 Admin-Handbuch
       </a>
       <a
         href="?tab=tech"
-        class={`tab tab-lg font-medium ${tab === "tech" ? "tab-active text-green-800" : ""}`}
+        class={`tab tab-lg font-medium rounded-lg ${tab === "tech" ? "tab-active" : ""}`}
       >
         🔧 Technische Dokumentation
       </a>
@@ -57,120 +65,170 @@ const tab = Astro.url.searchParams.get("tab") ?? "admin";
 
     <!-- Inhalt -->
     <div
-      class="prose prose-green max-w-none bg-white rounded-xl border p-8 shadow-sm"
-    >
-      {
-        tab === "admin" && (
-          <div id="admin-content">
-            <slot name="admin" />
-          </div>
-        )
-      }
-      {
-        tab === "tech" && (
-          <div id="tech-content">
-            <slot name="tech" />
-          </div>
-        )
-      }
-    </div>
+      class="docs-prose prose prose-green max-w-none bg-white rounded-xl border p-8 shadow-sm"
+      set:html={html}
+    />
   </div>
 </BaseLayout>
 
-<!-- Markdown-Inhalte inline rendern -->
-<script>
-  // Inhalte per fetch laden und als HTML rendern (marked.js)
-  const tab = new URLSearchParams(window.location.search).get("tab") ?? "admin";
-  const contentDiv = document.getElementById(
-    tab === "admin" ? "admin-content" : "tech-content",
-  );
+<style is:global>
+  .docs-hero {
+    background: linear-gradient(135deg, #f7fbf4 0%, #eef6e8 100%);
+    border-color: #d7e8cf;
+  }
 
-  const file =
-    tab === "admin"
-      ? "/docs/evma-admin-handbuch.md"
-      : "/docs/evma-technische-dokumentation.md";
+  .docs-download {
+    background: #2c5f2d;
+    transition: background-color 0.2s ease, transform 0.2s ease;
+  }
 
-  // Marked.js aus CDN laden
-  const script = document.createElement("script");
-  script.src =
-    "https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js";
-  script.onload = async () => {
-    const res = await fetch(file);
-    const md = await res.text();
-    if (contentDiv) {
-      contentDiv.innerHTML = window.marked.parse(md);
-    }
-  };
-  document.head.appendChild(script);
-</script>
+  .docs-download:hover {
+    background: #234b24;
+    transform: translateY(-1px);
+  }
 
-<style>
-  .prose h1 {
+  .docs-download-secondary {
+    background: #ffffff;
+    border: 1px solid #97bc62;
     color: #2c5f2d;
-    font-size: 1.6rem;
+  }
+
+  .docs-download-secondary:hover {
+    background: #f1f5f1;
+    color: #1a3b1b;
+  }
+
+  .docs-tabs {
+    background: #f7fbf4;
+    border-color: #d7e8cf;
+    width: fit-content;
+    max-width: 100%;
+  }
+
+  .docs-tabs .tab {
+    color: #446046;
+  }
+
+  .docs-tabs .tab:hover {
+    color: #2c5f2d;
+  }
+
+  .docs-prose h1 {
+    color: #2c5f2d;
+    font-size: 1.8rem;
+    font-weight: 700;
     margin-bottom: 0.5rem;
   }
-  .prose h2 {
+
+  .docs-prose h2 {
     color: #2c5f2d;
-    font-size: 1.2rem;
+    font-size: 1.3rem;
+    font-weight: 600;
     margin-top: 1.8rem;
-    margin-bottom: 0.4rem;
-    border-bottom: 1px solid #97bc62;
-    padding-bottom: 4px;
+    margin-bottom: 0.6rem;
+    border-bottom: 2px solid #97bc62;
+    padding-bottom: 0.4rem;
   }
-  .prose h3 {
+
+  .docs-prose h3 {
+    color: #1a3b1b;
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-top: 1.2rem;
+    margin-bottom: 0.4rem;
+  }
+
+  .docs-prose h4 {
     color: #1a3b1b;
     font-size: 1rem;
-    margin-top: 1.2rem;
+    font-weight: 600;
+    margin-top: 1rem;
   }
-  .prose code {
+
+  .docs-prose p {
+    margin-bottom: 1rem;
+    line-height: 1.6;
+  }
+
+  .docs-prose ul,
+  .docs-prose ol {
+    margin-bottom: 1rem;
+    margin-left: 1.5rem;
+  }
+
+  .docs-prose li {
+    margin-bottom: 0.4rem;
+    line-height: 1.5;
+  }
+
+  .docs-prose code {
     background: #f1f5f1;
     padding: 1px 5px;
     border-radius: 4px;
     font-size: 0.85em;
     color: #2c5f2d;
   }
-  .prose pre {
+
+  .docs-prose pre {
     background: #f1f5f1;
     padding: 1rem;
     border-radius: 8px;
     border-left: 3px solid #97bc62;
     overflow-x: auto;
+    margin-bottom: 1rem;
   }
-  .prose pre code {
+
+  .docs-prose pre code {
     background: none;
     padding: 0;
+    color: inherit;
   }
-  .prose blockquote {
+
+  .docs-prose blockquote {
     border-left: 3px solid #97bc62;
     background: #f5f5f5;
     padding: 0.5rem 1rem;
     border-radius: 0 8px 8px 0;
     color: #64748b;
     font-style: italic;
+    margin: 1rem 0;
   }
-  .prose table {
+
+  .docs-prose a {
+    color: #2c5f2d;
+    text-decoration: underline;
+  }
+
+  .docs-prose a:hover {
+    color: #1a3b1b;
+  }
+
+  .docs-prose hr {
+    border-color: #97bc62;
+    margin: 2rem 0;
+  }
+
+  .docs-prose table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 0.9rem;
+    margin: 1rem 0;
   }
-  .prose th {
-    background: #2c5f2d;
-    color: white;
-    padding: 8px 12px;
+
+  .docs-prose th,
+  .docs-prose td {
+    border: 1px solid #ddd;
+    padding: 0.75rem;
     text-align: left;
   }
-  .prose td {
-    padding: 7px 12px;
-    border-bottom: 1px solid #e8f0e8;
-  }
-  .prose tr:nth-child(even) td {
-    background: #f5f5f5;
-  }
-  .prose a {
+
+  .docs-prose th {
+    background: #f1f5f1;
     color: #2c5f2d;
+    font-weight: 600;
   }
-  .tab-active {
-    border-bottom-color: #2c5f2d !important;
+
+  .docs-tabs .tab-active {
+    background: #2c5f2d;
+    color: #fff;
   }
 </style>

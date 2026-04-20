@@ -7,7 +7,7 @@ import type { EventFilters } from "./filterTypes";
 
 export function EventsUserPage() {
     const [selectedEvent, setSelectedEvent] = useState<DisplayEvent | null>(null);
-    const [view, setView] = useState<"month" | "week" | "list">("month");
+    const [view, setView] = useState<"month" | "week" | "list">("list");
 
     const now = new Date();
     const [filters, setFilters] = useState<EventFilters>({
@@ -24,8 +24,8 @@ export function EventsUserPage() {
             {/* Linke Spalte (2/3) */}
             <div className="lg:col-span-2 space-y-4">
 
-                {/* Filterleiste */}
-                <Filters mode={view} onChange={(f) => setFilters(f)} />
+                {/* Filterleiste – nur im Listenmodus aktiv */}
+                {view === "list" && <Filters mode={view} onChange={(f) => setFilters(f)} />}
 
                 {/* Tabs */}
                 <div className="flex gap-2 border-b pb-2">

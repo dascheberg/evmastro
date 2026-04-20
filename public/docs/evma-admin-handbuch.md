@@ -26,9 +26,11 @@ Nach erfolgreichem Login landet man automatisch im Admin-Dashboard.
 > **Hinweis:** Bei falschem Passwort erscheint eine Fehlermeldung. Bei Problemen bitte den Administrator kontaktieren.
 
 ### Passwort vergessen?
+
 Das Zurücksetzen erfolgt durch den technischen Administrator. Bitte eine E-Mail an `progdieter@dascheberg.de` senden.
 
 ### Ausloggen
+
 Oben rechts in der Navigation auf **Logout** klicken.
 
 ---
@@ -37,19 +39,20 @@ Oben rechts in der Navigation auf **Logout** klicken.
 
 Nach dem Login stehen folgende Bereiche zur Verfügung:
 
-| Menüpunkt | Beschreibung |
-|---|---|
-| **Dashboard** | Übersicht mit Statistiken und Kalender |
-| **Veranstaltungen** | Veranstaltungen anlegen, bearbeiten, löschen |
-| **Import** | CSV/Excel-Dateien importieren |
-| **Stammdaten** | Veranstalter, Orte, Typen, Zeitfenster verwalten |
-| **Verwaltung** | Benutzer und Import-Protokolle |
+| Menüpunkt           | Beschreibung                                     |
+| ------------------- | ------------------------------------------------ |
+| **Dashboard**       | Übersicht mit Statistiken und Kalender           |
+| **Veranstaltungen** | Veranstaltungen anlegen, bearbeiten, löschen     |
+| **Import**          | CSV/Excel-Dateien importieren                    |
+| **Stammdaten**      | Veranstalter, Orte, Typen, Zeitfenster verwalten |
+| **Verwaltung**      | Benutzer und Import-Protokolle                   |
 
 ---
 
 ## 4. Dashboard
 
 Das Dashboard zeigt auf einen Blick:
+
 - Anzahl aller Veranstaltungen
 - Veranstaltungen pro Veranstalter / Ort / Typ
 - Monatskalender mit Veranstaltungstagen
@@ -95,6 +98,7 @@ Das Dashboard zeigt auf einen Blick:
 ### 5.4 Suchen und Filtern
 
 Die Tabelle bietet folgende Filtermöglichkeiten:
+
 - **Freitextsuche:** Sucht in Veranstalter, Ort, Typ und Bemerkung
 - **Veranstalter-Filter:** Dropdown zur Auswahl
 - **Ort-Filter:** Dropdown zur Auswahl
@@ -112,15 +116,15 @@ Mit der Import-Funktion können Veranstaltungen aus CSV- oder Excel-Dateien mass
 
 Die Datei muss folgende Spalten enthalten (Bezeichnungen können variieren, werden beim Import zugeordnet):
 
-| Spalte | Beschreibung |
-|---|---|
-| Startdatum | Datum der Veranstaltung (z.B. `01.04.2025`) |
-| Enddatum | Ende der Veranstaltung (optional) |
+| Spalte       | Beschreibung                                        |
+| ------------ | --------------------------------------------------- |
+| Startdatum   | Datum der Veranstaltung (z.B. `01.04.2025`)         |
+| Enddatum     | Ende der Veranstaltung (optional)                   |
 | Veranstalter | Name des Veranstalters (bei Mehrfach-Modus Pflicht) |
-| Ort | Veranstaltungsort |
-| Typ | Art der Veranstaltung |
-| Zeitfenster | z.B. `Vormittag`, `Nachmittag` |
-| Bemerkung | Optionaler Freitext |
+| Ort          | Veranstaltungsort                                   |
+| Typ          | Art der Veranstaltung                               |
+| Zeitfenster  | z.B. `Vormittag`, `Nachmittag`                      |
+| Bemerkung    | Optionaler Freitext                                 |
 
 > **Hinweis zu Excel-Dateien:** Datumsfelder die intern als Seriennummern gespeichert sind (z.B. `46023` statt `01.01.2026`) werden automatisch korrekt umgewandelt.
 
@@ -147,22 +151,26 @@ Alle durchgeführten Importe werden protokolliert. Das Protokoll ist unter **Ver
 ## 7. Stammdaten verwalten
 
 Unter **Stammdaten** können folgende Listen gepflegt werden:
+
 - **Veranstalter**
 - **Orte**
 - **Veranstaltungstypen**
 - **Zeitfenster**
 
 ### Neuen Eintrag anlegen
+
 1. Gewünschte Liste auswählen
 2. Namen eingeben
 3. Auf **Hinzufügen** klicken
 
 ### Eintrag umbenennen
+
 1. Auf das **Stift-Symbol** klicken
 2. Neuen Namen eingeben
 3. Bestätigen
 
 ### Eintrag löschen
+
 > **Achtung:** Einträge die noch bei Veranstaltungen verwendet werden, können nicht gelöscht werden.
 
 ---
@@ -172,13 +180,16 @@ Unter **Stammdaten** können folgende Listen gepflegt werden:
 Unter **Verwaltung → Benutzer** können Admin-Accounts verwaltet werden.
 
 ### E-Mail-Benachrichtigungen aktivieren
+
 In der Benutzerliste gibt es eine **Mail-Info**-Checkbox. Ist sie aktiviert, erhält dieser Benutzer automatisch E-Mails bei:
+
 - Neu angelegten Veranstaltungen
 - Geänderten Veranstaltungen
 - Gelöschten Veranstaltungen
 - Durchgeführten Importen
 
 ### Passwort ändern
+
 1. In der Benutzerliste auf **Passwort ändern** klicken
 2. Neues Passwort eingeben (mindestens 8 Zeichen)
 3. Bestätigen
@@ -193,6 +204,7 @@ Die öffentliche Ansicht ist ohne Login erreichbar unter:
 **https://www.gemeinde24640.de**
 
 Besucher können:
+
 - Den Monatskalender durchblättern
 - Veranstaltungsdetails einsehen
 - Events als iCal-Datei herunterladen (für Kalender-Apps)

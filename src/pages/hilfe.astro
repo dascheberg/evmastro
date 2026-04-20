@@ -1,356 +1,120 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
+import { readFile } from "node:fs/promises";
+import { marked } from "marked";
+
+const mdFile = new URL("../content/hilfe.md", import.meta.url);
+const md = await readFile(mdFile, "utf-8");
+const html = marked.parse(md) as string;
 ---
 
 <BaseLayout title="Hilfe">
-  <div class="max-w-3xl mx-auto py-8 px-4 space-y-10">
-    <div>
-      <h1 class="text-3xl font-bold mb-2">Hilfe & Anleitung</h1>
-      <p class="text-gray-500">Veranstaltungskalender Gemeinde Schmalfeld</p>
-    </div>
-
-    <!-- Öffentlicher Bereich -->
-    <section class="space-y-4">
-      <h2 class="text-xl font-bold border-b pb-2">📅 Kalender nutzen</h2>
-      <p>
-        Der öffentliche Veranstaltungskalender ist ohne Login erreichbar. Hier
-        sehen Sie alle geplanten Veranstaltungen der Gemeinde Schmalfeld auf
-        einen Blick.
-      </p>
-      <ul class="list-disc list-inside space-y-1 text-gray-700">
-        <li>
-          Mit den Pfeilen links und rechts können Sie zwischen den Monaten
-          wechseln.
-        </li>
-        <li>Tage mit Veranstaltungen sind farblich hervorgehoben.</li>
-        <li>Ein Klick auf einen Tag zeigt die Veranstaltungen dieses Tages.</li>
-        <li>
-          Neben der Kalenderansicht gibt es auch eine Listenansicht aller
-          Veranstaltungen, die über das Menü erreichbar ist. Hier können Sie
-          bequem nach Veranstalter, Ort oder Typ und Zeiträumen filtern.
-        </li>
-        <li>
-          Über die Buttons in der Listenansicht können Sie die angezeigten
-          Veranstaltungen als <b>PDF oder Excel-Datei</b> herunterladen oder über
-          den <strong>iCal-Button</strong> in Ihren Kalender (Outlook, Google Calendar,
-          Apple Kalender) importieren.
-        </li>
-      </ul>
-    </section>
-
-    <!-- Admin-Login -->
-    <section class="space-y-4">
-      <h2 class="text-xl font-bold border-b pb-2">🔐 Admin-Login</h2>
-      <p>
-        Der Administrationsbereich ist passwortgeschützt und nur für berechtigte
-        Personen zugänglich.
-      </p>
-      <ol class="list-decimal list-inside space-y-1 text-gray-700">
-        <li>Oben rechts auf <strong>Admin-Login</strong> klicken.</li>
-        <li>E-Mail-Adresse und Passwort eingeben.</li>
-        <li>Auf <strong>Einloggen</strong> klicken.</li>
-      </ol>
-      <div class="alert bg-base-200 text-sm">
-        <span>
-          Bei Problemen mit dem Login oder vergessenem Passwort bitte an
-          <a href="mailto:progdieter@dascheberg.de" class="link"
-            >progdieter@dascheberg.de</a
-          > wenden.
-        </span>
-      </div>
-    </section>
-
-    <!-- Dashboard (Admin) -->
-    <section class="space-y-4">
-      <h2 class="text-xl font-bold border-b pb-2">📊 Dashboard (Admin)</h2>
-      <p>
-        Nach dem Login zeigt das Dashboard die wichtigsten Informationen auf
-        einen Blick.
-      </p>
-      <ul class="list-disc list-inside space-y-1 text-gray-700">
-        <li>
-          Statistik-Widgets zu Veranstaltungen, Veranstaltern, Orten und Typen.
-        </li>
-        <li>Monatskalender mit markierten Veranstaltungstagen.</li>
-        <li>
-          Widget „Anstehende Veranstaltungen“ mit Tabs
-          <strong>Heute</strong>, <strong>7 Tage</strong> und <strong
-            >30 Tage</strong
-          >.
-        </li>
-        <li>
-          Hinweisbereich „Terminbenachrichtigungen“ mit Link zur Seite
-          <strong>Abonnieren</strong>.
-        </li>
-      </ul>
-    </section>
-
-    <!-- Veranstaltungen verwalten -->
-    <section class="space-y-4">
-      <h2 class="text-xl font-bold border-b pb-2">
-        📝 Veranstaltungen verwalten
-      </h2>
-
-      <h3 class="font-semibold text-lg">Neue Veranstaltung anlegen</h3>
-      <ol class="list-decimal list-inside space-y-1 text-gray-700">
-        <li>Im Menü <strong>Veranstaltungen</strong> auswählen.</li>
-        <li>
-          Das Formular rechts ausfüllen (Startdatum, Veranstalter, Ort, Typ und
-          Zeitfenster sind Pflichtfelder).
-        </li>
-        <li>Auf <strong>Speichern</strong> klicken.</li>
-      </ol>
-      <p class="text-sm text-gray-500">
-        Tipp: Veranstalter, Orte, Typen und Zeitfenster können direkt im
-        Formular neu angelegt werden — einfach den Namen eintippen und auf <strong
-          >Neu anlegen</strong
-        > klicken.
-      </p>
-
-      <h3 class="font-semibold text-lg">Veranstaltung bearbeiten</h3>
-      <ol class="list-decimal list-inside space-y-1 text-gray-700">
-        <li>In der Tabelle die gewünschte Veranstaltung suchen.</li>
-        <li>Auf das <strong>Stift-Symbol</strong> in der Zeile klicken.</li>
-        <li>
-          Daten im Formular anpassen und auf <strong>Speichern</strong> klicken.
-        </li>
-      </ol>
-
-      <h3 class="font-semibold text-lg">Veranstaltung löschen</h3>
-      <ol class="list-decimal list-inside space-y-1 text-gray-700">
-        <li>In der Tabelle die gewünschte Veranstaltung suchen.</li>
-        <li>Auf das <strong>Papierkorb-Symbol</strong> klicken.</li>
-        <li>Im Bestätigungsdialog auf <strong>OK</strong> klicken.</li>
-      </ol>
-      <div class="alert alert-warning text-sm">
-        <span>⚠️ Das Löschen kann nicht rückgängig gemacht werden!</span>
-      </div>
-
-      <h3 class="font-semibold text-lg">Suchen und Filtern</h3>
-      <ul class="list-disc list-inside space-y-1 text-gray-700">
-        <li>
-          <strong>Freitextsuche:</strong> Sucht in Veranstalter, Ort, Typ und Bemerkung.
-        </li>
-        <li>
-          <strong>Dropdowns:</strong> Filtern nach Veranstalter, Ort oder Typ.
-        </li>
-        <li><strong>Datum von/bis:</strong> Zeitraum einschränken.</li>
-        <li>
-          <strong>Alle Filter zurücksetzen:</strong> Setzt alle Filter auf einmal
-          zurück.
-        </li>
-      </ul>
-    </section>
-
-    <!-- Import -->
-    <section class="space-y-4">
-      <h2 class="text-xl font-bold border-b pb-2">📥 Import</h2>
-      <p>
-        Mit der Import-Funktion können Veranstaltungen aus CSV- oder
-        Excel-Dateien massenweise importiert werden.
-      </p>
-
-      <h3 class="font-semibold text-lg">Veranstalter-Modus</h3>
-      <p class="text-gray-700">
-        Im ersten Schritt wählen Sie wie die Veranstalter in der Datei
-        organisiert sind:
-      </p>
-      <ul class="list-disc list-inside space-y-1 text-gray-700">
-        <li>
-          <strong>Ein Veranstalter:</strong> Alle Events in der Datei gehören zum
-          selben Veranstalter — dieser wird vorab aus der Liste ausgewählt.
-        </li>
-        <li>
-          <strong>Mehrere Veranstalter:</strong> Die Datei enthält eine Spalte mit
-          verschiedenen Veranstalternamen — diese wird beim Mapping der Spalten zugeordnet.
-        </li>
-      </ul>
-
-      <h3 class="font-semibold text-lg">Import-Ablauf</h3>
-      <ol class="list-decimal list-inside space-y-1 text-gray-700">
-        <li>Im Menü <strong>Import</strong> auswählen.</li>
-        <li>Veranstalter-Modus wählen (Ein oder Mehrere Veranstalter).</li>
-        <li>CSV- oder Excel-Datei hochladen.</li>
-        <li>Spalten der Datei den Feldern zuordnen (Mapping-Maske).</li>
-        <li>Duplikate prüfen — bereits vorhandene Events werden erkannt.</li>
-        <li>
-          Nicht erkannte Werte (z.B. neue Veranstalter oder Orte) zuordnen oder
-          neu anlegen.
-        </li>
-        <li>Import mit <strong>Import starten</strong> abschließen.</li>
-      </ol>
-
-      <div class="alert bg-base-200 text-sm">
-        <span>
-          <strong>Hinweis zu Excel-Dateien:</strong> Datumsfelder die intern als
-          Zahlen gespeichert sind (z.B. <code>46023</code> statt <code
-            >01.01.2026</code
-          >) werden automatisch korrekt umgewandelt.
-        </span>
-      </div>
-
-      <p class="text-sm text-gray-500">
-        Alle Importe werden protokolliert und können unter <strong
-          >Verwaltung → Import-Protokolle</strong
-        >
-        eingesehen und bei Bedarf rückgängig gemacht werden.
-      </p>
-    </section>
-
-    <!-- Stammdaten -->
-    <section class="space-y-4">
-      <h2 class="text-xl font-bold border-b pb-2">🗂 Stammdaten</h2>
-      <p>
-        Unter <strong>Stammdaten</strong> können Veranstalter, Orte, Veranstaltungstypen
-        und Zeitfenster angelegt, umbenannt und gelöscht werden.
-      </p>
-      <div class="alert bg-base-200 text-sm">
-        <span>
-          Einträge die noch bei Veranstaltungen verwendet werden, können nicht
-          gelöscht werden. Umbenennen ist jederzeit möglich — die Änderung wirkt
-          sich automatisch auf alle verknüpften Veranstaltungen aus.
-        </span>
-      </div>
-    </section>
-
-    <!-- E-Mail Benachrichtigungen -->
-    <section class="space-y-4">
-      <h2 class="text-xl font-bold border-b pb-2">
-        📧 E-Mail-Benachrichtigungen
-      </h2>
-      <p>
-        Admins können automatische E-Mail-Benachrichtigungen aktivieren. Sie
-        erhalten dann eine E-Mail wenn Veranstaltungen angelegt, geändert,
-        gelöscht oder importiert werden.
-      </p>
-      <p class="text-gray-700">
-        Die Einstellung ist unter <strong>Verwaltung → Benutzer</strong> in der Spalte
-        <strong>Mail-Info</strong> zu finden — einfach die Checkbox aktivieren oder
-        deaktivieren.
-      </p>
-    </section>
-
-    <!-- FAQ -->
-    <section class="space-y-4">
-      <h2 class="text-xl font-bold border-b pb-2">❓ Häufige Fragen</h2>
-
-      <div class="space-y-4">
-        <div class="collapse collapse-arrow bg-base-200">
-          <input type="checkbox" />
-          <div class="collapse-title font-medium">
-            Ich kann mich nicht einloggen.
-          </div>
-          <div class="collapse-content text-sm text-gray-700">
-            <p>
-              Passwort prüfen. Bei vergessenem Passwort bitte
-              <a href="mailto:progdieter@dascheberg.de" class="link"
-                >progdieter@dascheberg.de</a
-              >
-              kontaktieren.
-            </p>
-          </div>
-        </div>
-
-        <div class="collapse collapse-arrow bg-base-200">
-          <input type="checkbox" />
-          <div class="collapse-title font-medium">
-            Eine Veranstaltung taucht im Kalender nicht auf.
-          </div>
-          <div class="collapse-content text-sm text-gray-700">
-            <p>
-              Prüfen ob das Startdatum korrekt eingetragen ist. Der Kalender
-              zeigt standardmäßig aktuelle und zukünftige Events.
-            </p>
-          </div>
-        </div>
-
-        <div class="collapse collapse-arrow bg-base-200">
-          <input type="checkbox" />
-          <div class="collapse-title font-medium">
-            Ich bekomme keine E-Mail-Benachrichtigungen.
-          </div>
-          <div class="collapse-content text-sm text-gray-700">
-            <p>
-              Unter <strong>Verwaltung → Benutzer</strong> prüfen ob die
-              <strong>Mail-Info</strong>-Checkbox aktiviert ist.
-            </p>
-          </div>
-        </div>
-
-        <div class="collapse collapse-arrow bg-base-200">
-          <input type="checkbox" />
-          <div class="collapse-title font-medium">
-            Beim Import werden Duplikate gemeldet.
-          </div>
-          <div class="collapse-content text-sm text-gray-700">
-            <p>
-              Das ist normal — der Import erkennt bereits vorhandene
-              Veranstaltungen automatisch. Sie können wählen ob diese
-              übersprungen oder überschrieben werden sollen.
-            </p>
-          </div>
-        </div>
-
-        <div class="collapse collapse-arrow bg-base-200">
-          <input type="checkbox" />
-          <div class="collapse-title font-medium">
-            Im Import erscheinen Zahlen statt Datumsangaben.
-          </div>
-          <div class="collapse-content text-sm text-gray-700">
-            <p>
-              Das passiert bei Excel-Dateien die Datumsfelder intern als
-              Seriennummern speichern. Die Anwendung erkennt und wandelt diese
-              automatisch um — kein manueller Eingriff nötig.
-            </p>
-          </div>
-        </div>
-
-        <div class="collapse collapse-arrow bg-base-200">
-          <input type="checkbox" />
-          <div class="collapse-title font-medium">
-            Wie kann ich den Kalender in Outlook oder Google Calendar einbinden?
-          </div>
-          <div class="collapse-content text-sm text-gray-700">
-            <p>
-              Auf der Startseite gibt es einen <strong>iCal-Button</strong>. Die
-              heruntergeladene Datei kann direkt in Outlook, Google Calendar
-              oder Apple Kalender importiert werden. Für eine dauerhafte
-              Einbindung die iCal-URL abonnieren.
-            </p>
-          </div>
-        </div>
-
-        <div class="collapse collapse-arrow bg-base-200">
-          <input type="checkbox" />
-          <div class="collapse-title font-medium">
-            Kann ich Events für mehrere Veranstalter auf einmal importieren?
-          </div>
-          <div class="collapse-content text-sm text-gray-700">
-            <p>
-              Ja — im ersten Import-Schritt <strong
-                >„Mehrere Veranstalter"</strong
-              > wählen. Die Datei muss dann eine Spalte mit den Veranstalternamen
-              enthalten, die beim Mapping zugeordnet wird.
-            </p>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Kontakt -->
-    <section class="space-y-2">
-      <h2 class="text-xl font-bold border-b pb-2">📬 Kontakt</h2>
-      <p class="text-gray-700">
-        Bei technischen Problemen oder Fragen zur Anwendung:
-      </p>
-      <p>
-        <a
-          href="mailto:progdieter@dascheberg.de"
-          class="link link-primary font-medium"
-        >
-          progdieter@dascheberg.de
-        </a>
-      </p>
-    </section>
+  <div class="max-w-3xl mx-auto py-8 px-4">
+    <div
+      class="hilfe-prose prose prose-green max-w-none bg-white rounded-xl border p-8 shadow-sm"
+      set:html={html}
+    />
   </div>
 </BaseLayout>
+
+<style is:global>
+  .hilfe-prose h1 {
+    color: #2c5f2d;
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+  }
+
+  .hilfe-prose h2 {
+    color: #2c5f2d;
+    font-size: 1.3rem;
+    font-weight: 600;
+    margin-top: 1.8rem;
+    margin-bottom: 0.6rem;
+    border-bottom: 2px solid #97bc62;
+    padding-bottom: 0.4rem;
+  }
+  .hilfe-prose h3 {
+    color: #1a3b1b;
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-top: 1.2rem;
+    margin-bottom: 0.4rem;
+  }
+  .hilfe-prose h4 {
+    color: #1a3b1b;
+    font-size: 1rem;
+    font-weight: 600;
+    margin-top: 1rem;
+  }
+  .hilfe-prose p {
+    margin-bottom: 1rem;
+    line-height: 1.6;
+  }
+
+  .hilfe-prose ul,
+  .hilfe-prose ol {
+    margin-bottom: 1rem;
+    margin-left: 1.5rem;
+  }
+  .hilfe-prose li {
+    margin-bottom: 0.4rem;
+    line-height: 1.5;
+  }
+  .hilfe-prose code {
+    background: #f1f5f1;
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-size: 0.85em;
+    color: #2c5f2d;
+  }
+  .hilfe-prose pre {
+    background: #f1f5f1;
+    padding: 1rem;
+    border-radius: 8px;
+    border-left: 3px solid #97bc62;
+    overflow-x: auto;
+    margin-bottom: 1rem;
+  }
+  .hilfe-prose pre code {
+    background: none;
+    padding: 0;
+    color: inherit;
+  }
+  .hilfe-prose blockquote {
+    border-left: 3px solid #97bc62;
+    background: #f5f5f5;
+    padding: 0.5rem 1rem;
+    border-radius: 0 8px 8px 0;
+    color: #64748b;
+    font-style: italic;
+    margin: 1rem 0;
+  }
+  .hilfe-prose a {
+    color: #2c5f2d;
+    text-decoration: underline;
+  }
+  .hilfe-prose a:hover {
+    color: #1a3b1b;
+  }
+  .hilfe-prose hr {
+    border-color: #97bc62;
+    margin: 2rem 0;
+  }
+  .hilfe-prose table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 1rem 0;
+  }
+  .hilfe-prose th,
+  .hilfe-prose td {
+    border: 1px solid #ddd;
+    padding: 0.75rem;
+    text-align: left;
+  }
+  .hilfe-prose th {
+    background: #f1f5f1;
+    color: #2c5f2d;
+    font-weight: 600;
+  }
+</style>
