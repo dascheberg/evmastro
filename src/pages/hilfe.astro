@@ -1,11 +1,9 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
-import { readFile } from "node:fs/promises";
 import { marked } from "marked";
+import hilfeMarkdown from "../../docs/hilfe.md?raw";
 
-const mdFile = new URL("../content/hilfe.md", import.meta.url);
-const md = await readFile(mdFile, "utf-8");
-const html = marked.parse(md) as string;
+const html = marked.parse(hilfeMarkdown) as string;
 ---
 
 <BaseLayout title="Hilfe">
